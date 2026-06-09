@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Activity, UserPlus, LogOut, FileText, TrendingUp, Dumbbell, ChevronRight, BarChart2, CheckCircle, Copy } from 'lucide-react';
+import { Users, Activity, UserPlus, LogOut, FileText, TrendingUp, Dumbbell, ChevronRight, BarChart2, CheckCircle, Copy, MapPin, Navigation, Shield, Loader } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { subscribeToMembers, subscribeToAttendance } from '../services/firestoreService';
+import { subscribeToMembers, subscribeToAttendance, getGymLocation, updateGymLocation } from '../services/firestoreService';
+import { getCurrentPosition } from '../core/geolocation';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
@@ -20,6 +21,16 @@ const Dashboard = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [showQR, setShowQR] = useState(false);
 
+  // ─── Gym Location State ───
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [gymLat, setGymLat] = useState('');
+  const [gymLng, setGymLng] = useState('');
+  const [allowedRadius, setAllowedRadius] = useState(100);
+  const [locationSaved, setLocationSaved] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const [fetchingGPS, setFetchingGPS] = useState(false);
+
   useEffect(() => {
     if (currentUser) {
       const unsubscribeMembers = subscribeToMembers(currentUser.uid, (data) => {
@@ -29,6 +40,17 @@ const Dashboard = () => {
       const unsubscribeAttendance = subscribeToAttendance(currentUser.uid, attendanceDate, (data) => {
         setAttendanceRecords(data);
       });
+
+      // Load existing gym location
+      getGymLocation(currentUser.uid).then(loc => {
+        if (loc) {
+          setGymLat(String(loc.gymLat));
+          setGymLng(String(loc.gymLng));
+          setAllowedRadius(loc.allowedRadius);
+          setLocationSaved(true);
+        }
+      }).catch(console.error);
+
       return () => {
         unsubscribeMembers();
         unsubscribeAttendance();
@@ -88,6 +110,54 @@ const Dashboard = () => {
   const handleLogout = async () => {
     await logout();
     navigate('/');
+  };
+
+  // ─── Location Handlers ───
+  const handleUseCurrentLocation = async () => {
+    setFetchingGPS(true);
+    setLocationError('');
+    try {
+      const pos = await getCurrentPosition();
+      setGymLat(String(pos.latitude));
+      setGymLng(String(pos.longitude));
+      setLocationError('');
+    } catch (err) {
+      const msg = err?.message || '';
+      if (msg === 'GEOLOCATION_DENIED') {
+        setLocationError('Location permission denied. Please allow GPS access.');
+      } else if (msg === 'GEOLOCATION_UNSUPPORTED') {
+        setLocationError('GPS not supported in this browser.');
+      } else {
+        setLocationError('Could not get location. Try again.');
+      }
+    } finally {
+      setFetchingGPS(false);
+    }
+  };
+
+  const handleSaveLocation = async () => {
+    const lat = parseFloat(gymLat);
+    const lng = parseFloat(gymLng);
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      setLocationError('Please enter valid coordinates.');
+      return;
+    }
+    setLocationLoading(true);
+    setLocationError('');
+    try {
+      await updateGymLocation(currentUser.uid, {
+        gymLat: lat,
+        gymLng: lng,
+        allowedRadius: allowedRadius,
+      });
+      setLocationSaved(true);
+      setTimeout(() => setShowLocationModal(false), 1200);
+    } catch (err) {
+      console.error(err);
+      setLocationError('Failed to save. Please try again.');
+    } finally {
+      setLocationLoading(false);
+    }
   };
 
   const getBmiColor = (bmi) => {
@@ -238,6 +308,25 @@ const Dashboard = () => {
             }}
           >
             <Copy size={18} /> View & Print Gym Check-In QR
+          </button>
+        </div>
+
+        {/* GYM LOCATION SETTINGS BUTTON */}
+        <div style={{ marginBottom: '14px' }}>
+          <button
+            onClick={() => setShowLocationModal(true)}
+            style={{
+              width: '100%', padding: '16px', borderRadius: '16px',
+              background: locationSaved
+                ? 'linear-gradient(135deg, rgba(6,214,160,0.15) 0%, rgba(6,214,160,0.05) 100%)'
+                : 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%)',
+              border: `1px dashed ${locationSaved ? 'rgba(6,214,160,0.4)' : 'rgba(245,158,11,0.4)'}`,
+              color: '#fff', fontSize: '0.9rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer'
+            }}
+          >
+            <MapPin size={18} color={locationSaved ? '#06d6a0' : '#f59e0b'} />
+            {locationSaved ? '📍 Gym Location Set ✓' : '⚠️ Set Gym Location (Anti-Cheat)'}
           </button>
         </div>
 
@@ -567,6 +656,191 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      {/* GYM LOCATION SETTINGS MODAL */}
+      {showLocationModal && (
+        <div
+          onClick={() => setShowLocationModal(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 999,
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(135deg, #0f1729 0%, #1a1040 100%)',
+              border: '1px solid rgba(99,102,241,0.3)',
+              padding: '36px 32px', borderRadius: '24px',
+              width: '100%', maxWidth: '440px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 60px rgba(99,102,241,0.1)'
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(99,102,241,0.4)'
+              }}>
+                <MapPin size={22} color="#fff" />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.3rem', fontFamily: 'var(--font-head)', color: '#fff', margin: 0 }}>
+                  Gym Location
+                </h2>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-3)', margin: 0 }}>GPS anti-cheat protection</p>
+              </div>
+            </div>
+
+            {/* Status Badge */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 14px', borderRadius: '12px', marginBottom: '20px',
+              background: locationSaved ? 'rgba(6,214,160,0.1)' : 'rgba(245,158,11,0.1)',
+              border: `1px solid ${locationSaved ? 'rgba(6,214,160,0.3)' : 'rgba(245,158,11,0.3)'}`,
+            }}>
+              <Shield size={16} color={locationSaved ? '#06d6a0' : '#f59e0b'} />
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: locationSaved ? '#06d6a0' : '#f59e0b' }}>
+                {locationSaved ? 'Location configured — GPS verification active' : 'Not set — members can check in from anywhere'}
+              </span>
+            </div>
+
+            {/* Use Current Location Button */}
+            <button
+              onClick={handleUseCurrentLocation}
+              disabled={fetchingGPS}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '12px', marginBottom: '16px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                color: '#fff', border: 'none', cursor: fetchingGPS ? 'wait' : 'pointer',
+                fontSize: '0.95rem', fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                boxShadow: '0 4px 16px rgba(99,102,241,0.4)',
+                opacity: fetchingGPS ? 0.7 : 1,
+                transition: 'all 0.2s'
+              }}
+            >
+              {fetchingGPS ? (
+                <><Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> Getting GPS...</>
+              ) : (
+                <><Navigation size={18} /> Use My Current Location</>
+              )}
+            </button>
+
+            <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: '0.75rem', marginBottom: '16px' }}>
+              — or enter coordinates manually —
+            </div>
+
+            {/* Manual Lat/Lng Inputs */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-2)', marginBottom: '6px', fontWeight: 600 }}>Latitude</label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 18.5204"
+                  value={gymLat}
+                  onChange={e => setGymLat(e.target.value)}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                    color: '#fff', fontSize: '0.95rem', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-2)', marginBottom: '6px', fontWeight: 600 }}>Longitude</label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 73.8567"
+                  value={gymLng}
+                  onChange={e => setGymLng(e.target.value)}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                    color: '#fff', fontSize: '0.95rem', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Radius Slider */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-2)', fontWeight: 600 }}>Allowed Radius</label>
+                <span style={{
+                  fontSize: '0.85rem', fontWeight: 800, color: '#6366f1',
+                  background: 'rgba(99,102,241,0.15)', padding: '2px 10px', borderRadius: '6px'
+                }}>{allowedRadius}m</span>
+              </div>
+              <input
+                type="range"
+                min="50" max="500" step="10"
+                value={allowedRadius}
+                onChange={e => setAllowedRadius(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#6366f1' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-3)' }}>50m (strict)</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-3)' }}>500m (relaxed)</span>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {locationError && (
+              <div style={{
+                background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)',
+                borderRadius: '10px', padding: '10px 14px', marginBottom: '16px',
+                color: '#f43f5e', fontSize: '0.85rem'
+              }}>
+                ⚠️ {locationError}
+              </div>
+            )}
+
+            {/* Save Button */}
+            <button
+              onClick={handleSaveLocation}
+              disabled={locationLoading || !gymLat || !gymLng}
+              style={{
+                width: '100%', padding: '16px', borderRadius: '12px',
+                background: locationLoading || !gymLat || !gymLng
+                  ? 'rgba(255,255,255,0.1)'
+                  : 'linear-gradient(135deg, #06d6a0 0%, #04b285 100%)',
+                color: '#fff', border: 'none',
+                cursor: locationLoading || !gymLat || !gymLng ? 'not-allowed' : 'pointer',
+                fontSize: '1rem', fontWeight: 800,
+                boxShadow: !gymLat || !gymLng ? 'none' : '0 4px 16px rgba(6,214,160,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                transition: 'all 0.2s'
+              }}
+            >
+              {locationLoading ? (
+                <><Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> Saving...</>
+              ) : (
+                <><Shield size={18} /> Save Gym Location</>
+              )}
+            </button>
+
+            {/* Info Note */}
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', marginTop: '14px', lineHeight: 1.5 }}>
+              💡 Stand at your gym and tap "Use My Current Location" for best results.
+              Members must be within the radius to check in.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Inline keyframes */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

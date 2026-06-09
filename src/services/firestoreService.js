@@ -4,6 +4,30 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
+// ─── GYM LOCATION (Geolocation Check-In) ───
+
+export const getGymLocation = async (gymId) => {
+  const gymRef = doc(db, 'Gyms', gymId);
+  const snap = await getDoc(gymRef);
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  if (data.gymLat == null || data.gymLng == null) return null;
+  return {
+    gymLat: data.gymLat,
+    gymLng: data.gymLng,
+    allowedRadius: data.allowedRadius || 100,
+  };
+};
+
+export const updateGymLocation = async (gymId, { gymLat, gymLng, allowedRadius }) => {
+  const gymRef = doc(db, 'Gyms', gymId);
+  await updateDoc(gymRef, {
+    gymLat,
+    gymLng,
+    allowedRadius: allowedRadius || 100,
+  });
+};
+
 // ─── MEMBER MANAGEMENT ───
 
 export const addMember = async (gymId, member) => {
