@@ -308,8 +308,8 @@ const Dashboard = () => {
             <h2 style={{ fontSize: '1.3rem', fontFamily: 'var(--font-head)', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <CheckCircle color="#06d6a0" /> Daily Attendance Logs
             </h2>
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={attendanceDate}
               onChange={(e) => setAttendanceDate(e.target.value)}
               style={{
@@ -319,33 +319,79 @@ const Dashboard = () => {
             />
           </div>
 
-          {attendanceRecords.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-3)', padding: '30px 0' }}>
-              No attendance marked for this date.
+          {/* Summary Row */}
+          {members.length > 0 && (
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ flex: 1, background: 'rgba(6,214,160,0.1)', border: '1px solid rgba(6,214,160,0.3)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#06d6a0' }}>
+                  {attendanceRecords.length}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-2)', marginTop: '2px' }}>Present</div>
+              </div>
+              <div style={{ flex: 1, background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f43f5e' }}>
+                  {members.length - attendanceRecords.length}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-2)', marginTop: '2px' }}>Absent</div>
+              </div>
+              <div style={{ flex: 1, background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#6366f1' }}>
+                  {members.length}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-2)', marginTop: '2px' }}>Total</div>
+              </div>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {attendanceRecords.map((record) => {
-                const checkInTime = new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {members.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--text-3)', padding: '30px 0' }}>
+                No members added yet.
+              </div>
+            ) : (
+              members.map((member) => {
+                const record = attendanceRecords.find(r => r.memberId === member.memberId);
+                const isPresent = !!record;
+                const checkInTime = record?.checkInTime ? new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
+                const checkOutTime = record?.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
+
                 return (
-                  <div key={record.id} style={{
+                  <div key={member.memberId} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    background: 'rgba(255,255,255,0.05)', padding: '16px 20px', borderRadius: '12px',
-                    borderLeft: '4px solid #06d6a0'
+                    background: isPresent ? 'rgba(6,214,160,0.05)' : 'rgba(244,63,94,0.04)',
+                    padding: '16px 20px', borderRadius: '12px',
+                    borderLeft: `4px solid ${isPresent ? '#06d6a0' : '#f43f5e'}`
                   }}>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{record.memberName}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', marginTop: '2px' }}>Member ID: {record.memberId.slice(0,8)}...</div>
+                      <div style={{ fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{isPresent ? '✅' : '❌'}</span>
+                        <span>{member.memberName}</span>
+                        {member.shortId && <span style={{ fontSize: '0.7rem', color: 'var(--text-3)', background: 'rgba(255,255,255,0.07)', padding: '2px 7px', borderRadius: '6px' }}>{member.shortId}</span>}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginTop: '3px' }}>
+                        {isPresent ? (record.status === 'Completed' ? 'Session Completed ✓' : 'Currently In Gym') : 'Absent Today'}
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Checked In</div>
-                      <div style={{ fontWeight: 800, color: '#06d6a0', fontFamily: 'var(--font-head)' }}>{checkInTime}</div>
+                    <div style={{ textAlign: 'right', minWidth: '100px' }}>
+                      {isPresent ? (
+                        <>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>In / Out</div>
+                          <div style={{ fontWeight: 800, color: '#06d6a0', fontFamily: 'var(--font-head)', fontSize: '0.9rem' }}>
+                            {checkInTime}
+                          </div>
+                          <div style={{ fontWeight: 800, color: '#6366f1', fontFamily: 'var(--font-head)', fontSize: '0.9rem' }}>
+                            {checkOutTime || '—'}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: '0.85rem', color: '#f43f5e', fontWeight: 700 }}>Absent</div>
+                      )}
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </div>
 
         {/* ═══════════════ ANALYTICS SECTION ═══════════════ */}

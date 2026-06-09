@@ -1,6 +1,6 @@
 import {
   collection, doc, setDoc, updateDoc, deleteDoc,
-  getDocs, query, orderBy, onSnapshot, where
+  getDocs, getDoc, query, orderBy, onSnapshot, where
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -88,13 +88,12 @@ export const getMemberByShortId = async (gymId, shortId) => {
   return { ...snapshot.docs[0].data(), id: snapshot.docs[0].id };
 };
 
-export const getAttendanceRecord = async (gymId, dateStr, memberId) => {
-  const q = query(
-    collection(db, 'Gyms', gymId, 'Attendance', dateStr, 'Records'),
-    where('memberId', '==', memberId)
-  );
-  const snapshot = await getDocs(q);
-  return !snapshot.empty; // true if already marked
+// Returns the full attendance record object (or null)
+export const getAttendanceRecordFull = async (gymId, dateStr, memberId) => {
+  const attendanceRef = doc(db, 'Gyms', gymId, 'Attendance', dateStr, 'Records', memberId);
+  const snap = await getDoc(attendanceRef);
+  if (!snap.exists()) return null;
+  return snap.data();
 };
 
 export const markAttendance = async (gymId, dateStr, memberId, memberName) => {
@@ -103,7 +102,16 @@ export const markAttendance = async (gymId, dateStr, memberId, memberName) => {
     memberId,
     memberName,
     checkInTime: new Date().toISOString(),
+    checkOutTime: null,
     status: 'Present'
+  });
+};
+
+export const updateCheckOutTime = async (gymId, dateStr, memberId) => {
+  const attendanceRef = doc(db, 'Gyms', gymId, 'Attendance', dateStr, 'Records', memberId);
+  await updateDoc(attendanceRef, {
+    checkOutTime: new Date().toISOString(),
+    status: 'Completed'
   });
 };
 

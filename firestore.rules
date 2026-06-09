@@ -20,6 +20,13 @@ service cloud.firestore {
           allow update, delete: if request.auth != null && request.auth.uid == gymId;
         }
       }
+
+      // Anyone can check in (create attendance records). Only owner can modify/delete.
+      match /Attendance/{date}/Records/{recordId} {
+        allow read: if true;
+        allow create: if true;
+        allow update, delete: if request.auth != null && request.auth.uid == gymId;
+      }
     }
   }
 }
