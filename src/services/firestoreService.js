@@ -149,3 +149,103 @@ export const subscribeToAttendance = (gymId, dateStr, callback) => {
     callback(records);
   });
 };
+
+// ─── LEADS / ENQUIRIES (CRM) ───
+
+export const addEnquiry = async (gymId, enquiry) => {
+  const enquiryRef = doc(collection(db, 'Gyms', gymId, 'Enquiries'));
+  await setDoc(enquiryRef, { ...enquiry, id: enquiryRef.id, createdAt: new Date().toISOString() });
+};
+
+export const updateEnquiry = async (gymId, enquiryId, data) => {
+  const enquiryRef = doc(db, 'Gyms', gymId, 'Enquiries', enquiryId);
+  await updateDoc(enquiryRef, data);
+};
+
+export const subscribeToEnquiries = (gymId, callback) => {
+  const q = query(collection(db, 'Gyms', gymId, 'Enquiries'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
+  });
+};
+
+// ─── TRANSACTIONS (FINANCES) ───
+
+export const addTransaction = async (gymId, transaction) => {
+  const transRef = doc(collection(db, 'Gyms', gymId, 'Transactions'));
+  await setDoc(transRef, { ...transaction, id: transRef.id, createdAt: new Date().toISOString() });
+};
+
+export const subscribeToTransactions = (gymId, callback) => {
+  const q = query(collection(db, 'Gyms', gymId, 'Transactions'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
+  });
+};
+
+// ─── STAFF MANAGEMENT ───
+
+export const addStaff = async (gymId, staff) => {
+  const staffRef = doc(collection(db, 'Gyms', gymId, 'Staff'));
+  await setDoc(staffRef, { ...staff, id: staffRef.id, createdAt: new Date().toISOString() });
+};
+
+export const updateStaff = async (gymId, staffId, data) => {
+  const staffRef = doc(db, 'Gyms', gymId, 'Staff', staffId);
+  await updateDoc(staffRef, data);
+};
+
+export const subscribeToStaff = (gymId, callback) => {
+  const q = query(collection(db, 'Gyms', gymId, 'Staff'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
+  });
+};
+
+// ─── ACTIVITY TIMELINE ───
+
+export const addTimelineEvent = async (gymId, memberId, event) => {
+  const eventRef = doc(collection(db, 'Gyms', gymId, 'ActivityTimeline'));
+  await setDoc(eventRef, {
+    ...event,
+    memberId,
+    id: eventRef.id,
+    timestamp: new Date().toISOString()
+  });
+};
+
+export const subscribeToMemberTimeline = (gymId, memberId, callback) => {
+  const q = query(
+    collection(db, 'Gyms', gymId, 'ActivityTimeline'),
+    where('memberId', '==', memberId),
+    orderBy('timestamp', 'desc')
+  );
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
+  });
+};
+
+export const subscribeToRecentActivity = (gymId, callback, limitCount = 10) => {
+  // We can't use limit() easily without importing it, so we'll just fetch recent ones 
+  // or add limit to imports. Since we didn't add limit to import, we'll slice in UI.
+  const q = query(
+    collection(db, 'Gyms', gymId, 'ActivityTimeline'),
+    orderBy('timestamp', 'desc')
+  );
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
+  });
+};
+
+// ─── HELPER: GET MEMBER STATUS ───
+export const getMemberStatus = (endDateStr) => {
+  if (!endDateStr) return 'Unknown';
+  const today = new Date();
+  const end = new Date(endDateStr);
+  const diffTime = end - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return 'Expired';
+  if (diffDays <= 7) return 'Expiring Soon';
+  return 'Active';
+};
