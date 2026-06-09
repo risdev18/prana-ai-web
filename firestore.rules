@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Anyone can read gyms (for search), only owner can write
+    match /Gyms/{gymId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == gymId;
+      
+      // Anyone can read members (for member portal)
+      // Owner can create/delete. Anyone can update (for setting password & self-service)
+      match /Members/{memberId} {
+        allow read: if true;
+        allow create, delete: if request.auth != null && request.auth.uid == gymId;
+        allow update: if true;
+        
+        // Anyone can create new assessments (self-service). Only owner can update/delete.
+        match /Assessments/{assessmentId} {
+          allow read: if true;
+          allow create: if true;
+          allow update, delete: if request.auth != null && request.auth.uid == gymId;
+        }
+      }
+    }
+  }
+}
