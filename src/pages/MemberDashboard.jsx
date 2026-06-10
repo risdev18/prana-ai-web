@@ -509,7 +509,7 @@ const MemberDashboard = () => {
         {/* EDIT FORM */}
         {isEditing && (
           <div style={{
-            background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
             borderRadius: '16px', padding: '22px', marginBottom: '20px'
           }} className="animate-fade-up">
             <h3 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Update Your Stats</h3>
@@ -532,7 +532,7 @@ const MemberDashboard = () => {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="button" className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.05)' }} onClick={() => setIsEditing(false)}>Cancel</button>
+                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setIsEditing(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={saveLoading}>
                   {saveLoading ? 'Saving...' : 'Save & Recalculate'}
                 </button>
@@ -540,6 +540,57 @@ const MemberDashboard = () => {
             </form>
           </div>
         )}
+
+        {/* CONSISTENCY & STREAKS (Emotional Design) */}
+        <div style={{
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
+          borderRadius: '20px', padding: '24px', marginBottom: '20px',
+          position: 'relative', overflow: 'hidden'
+        }} className="animate-fade-up-2">
+          {/* subtle background glow */}
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
+          
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', fontSize: '1.1rem' }}>
+            <TrendingUp size={20} color="var(--gold)" /> Monthly Consistency
+          </h3>
+
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Circular Progress Ring Mock */}
+            <div style={{ position: 'relative', width: '100px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--gold)" strokeWidth="3" strokeDasharray="65, 100" strokeLinecap="round" style={{ animation: 'progress 1.5s ease-out forwards' }} />
+              </svg>
+              <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-head)' }}>18</span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-3)', textTransform: 'uppercase' }}>Days</span>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '4px' }}>You attended 18 days this month!</div>
+              <p style={{ color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: '12px' }}>You are in the top 15% of members for consistency. Keep it up!</p>
+              
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', padding: '8px 12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🔥</span>
+                  <div>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', lineHeight: 1 }}>5 Day</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Streak</div>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🏆</span>
+                  <div>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>12 Day</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Best Streak</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* BMI CARD */}
         <div style={{
@@ -597,8 +648,8 @@ const MemberDashboard = () => {
 
         {/* WORKOUT PLAN */}
         <div style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(99,102,241,0.2)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: '16px', padding: '22px',
           marginBottom: '16px'
         }} className="animate-fade-up-3">
@@ -637,8 +688,8 @@ const MemberDashboard = () => {
 
         {/* DIET PLAN */}
         <div style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(6,214,160,0.2)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: '16px', padding: '22px',
           marginBottom: '16px'
         }}>

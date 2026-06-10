@@ -1,316 +1,169 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, User, Ruler, Weight, Target, Activity, Phone } from 'lucide-react';
+import { ChevronLeft, User, Phone, CheckCircle, QrCode } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { GENDERS, ACTIVITY_LEVELS, GOALS } from '../core/constants';
-import { generateAssessment } from '../core/calculator';
 import { useAuth } from '../contexts/AuthContext';
-
-const GOAL_ICONS = {
-  'Weight Loss': '🔥',
-  'Muscle Gain': '💪',
-  'Maintain Fitness': '⚡',
-};
-
-const ACTIVITY_DESC = {
-  'Sedentary': 'Little or no exercise',
-  'Lightly Active': 'Light exercise 1-3 days/week',
-  'Moderately Active': 'Moderate exercise 3-5 days/week',
-  'Very Active': 'Hard exercise 6-7 days/week',
-  'Extra Active': 'Very hard exercise & physical job',
-};
-
-const InputWrap = ({ icon, children }) => (
-  <div style={{ position: 'relative' }}>
-    <div style={{
-      position: 'absolute', left: '14px', top: '50%',
-      transform: 'translateY(-50%)', color: 'var(--text-3)',
-      display: 'flex', alignItems: 'center', pointerEvents: 'none'
-    }}>{icon}</div>
-    {children}
-  </div>
-);
+import { updateMember } from '../services/firestoreService';
+import QRCode from 'react-qr-code';
 
 const AddMember = () => {
   const navigate = useNavigate();
-  const { gymData } = useAuth();
+  const { gymData, currentUser } = useAuth();
   
-  // Default to today for start date, and +1 month for end date
-  const today = new Date().toISOString().split('T')[0];
-  const nextMonth = new Date();
-  nextMonth.setMonth(nextMonth.getMonth() + 1);
-  const nextMonthStr = nextMonth.toISOString().split('T')[0];
-
   const [formData, setFormData] = useState({
     memberName: '',
     phone: '',
-    age: '',
-    gender: GENDERS.MALE,
-    startDate: today,
-    endDate: nextMonthStr,
-    height: '',
-    weight: '',
-    activityLevel: ACTIVITY_LEVELS.MODERATELY_ACTIVE,
-    goal: GOALS.MAINTAIN,
+    durationMonths: 1,
+    paymentStatus: 'Paid'
   });
+  
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMember, setSuccessMember] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleGenerate = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
+    if (!formData.memberName.trim()) return setError('Name is required');
+    if (!formData.phone.trim()) return setError('Phone is required');
+
+    setLoading(true);
     setError('');
-    const age = parseInt(formData.age);
-    const height = parseFloat(formData.height);
-    const weight = parseFloat(formData.weight);
 
-    if (!formData.memberName.trim()) return setError('Member name is required');
-    if (isNaN(age) || age <= 0 || age > 120) return setError('Enter a valid age (1–120)');
-    if (isNaN(height) || height <= 0 || height > 300) return setError('Enter a valid height (1–300 cm)');
-    if (isNaN(weight) || weight <= 0 || weight > 500) return setError('Enter a valid weight (1–500 kg)');
+    try {
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + parseInt(formData.durationMonths));
 
-    // Generate unique shortId based on Gym Name
-    const gymName = gymData?.gymName || 'GYM';
-    const prefix = gymName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,4);
-    const shortId = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const gymName = gymData?.gymName || 'GYM';
+      const prefix = gymName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,4);
+      const shortId = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const memberInput = {
-      memberId: uuidv4(),
-      shortId,
-      memberName: formData.memberName.trim(),
-      phone: formData.phone,
-      age, gender: formData.gender,
-      membershipStartDate: formData.startDate,
-      membershipEndDate: formData.endDate,
-      height, weight,
-      startingWeight: weight,
-      activityLevel: formData.activityLevel,
-      goal: formData.goal,
-      createdAt: new Date().toISOString(),
-    };
+      const newMember = {
+        memberId: uuidv4(),
+        shortId,
+        memberName: formData.memberName.trim(),
+        phone: formData.phone.trim(),
+        membershipStartDate: startDate.toISOString().split('T')[0],
+        membershipEndDate: endDate.toISOString().split('T')[0],
+        paymentStatus: formData.paymentStatus,
+        createdAt: new Date().toISOString(),
+        goal: 'Maintain Fitness',
+        activityLevel: 'Moderately Active'
+      };
 
-    const assessmentResult = generateAssessment(memberInput);
-    navigate('/assessment', { state: { assessment: assessmentResult, isNew: true } });
+      // Assuming updateMember acts as an upsert (or addMember function exists, we use updateMember as per current patterns)
+      await updateMember(currentUser.uid, newMember);
+      
+      setSuccessMember(newMember);
+    } catch (err) {
+      setError('Failed to add member. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  if (successMember) {
+    const qrValue = `${window.location.origin}/member-portal`;
+    return (
+      <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <div className="card text-center animate-fade-up" style={{ width: '100%', maxWidth: '400px' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--success-bg)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <CheckCircle size={32} />
+          </div>
+          <h2 style={{ marginBottom: '8px' }}>Member Added!</h2>
+          <p className="text-muted" style={{ marginBottom: '24px' }}>{successMember.memberName} is now active.</p>
+          
+          <div style={{ background: '#fff', padding: '16px', borderRadius: '16px', display: 'inline-block', marginBottom: '24px' }}>
+            <QRCode value={qrValue} size={150} level="M" />
+          </div>
+          
+          <div style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '2px', color: 'var(--primary)', marginBottom: '24px' }}>
+            ID: {successMember.shortId}
+          </div>
+
+          <div className="flex gap-3">
+            <button className="btn btn-outline flex-1" onClick={() => setSuccessMember(null)}>Add Another</button>
+            <button className="btn btn-primary flex-1" onClick={() => navigate('/members')}>View Members</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ minHeight: '100vh', padding: '0 20px 60px', position: 'relative', overflow: 'hidden' }}>
-      {/* BG Image */}
-      <div style={{
-         position: 'fixed', inset: 0,
-         backgroundImage: 'url("https://images.unsplash.com/photo-1599058945522-28d584b6f4ff?q=80&w=2069&auto=format&fit=crop")',
-         backgroundSize: 'cover',
-         backgroundPosition: 'center',
-         opacity: 0.15,
-         filter: 'contrast(1.2) grayscale(0.2)',
-         mixBlendMode: 'screen',
-         pointerEvents: 'none', zIndex: 0
-      }} />
-
-      <div style={{ maxWidth: '640px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-
-        {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '16px',
-          padding: '20px 0', marginBottom: '24px',
-          borderBottom: '1px solid var(--border)'
-        }}>
-          <button
-            onClick={() => navigate('/dashboard')}
-            style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text)', flexShrink: 0
-            }}
-          >
+    <div className="page">
+      <div style={{ maxWidth: '500px', margin: '0 auto', width: '100%' }}>
+        <div className="flex items-center gap-3 mb-6">
+          <button className="btn btn-ghost" style={{ padding: '8px', width: 'auto' }} onClick={() => navigate(-1)}>
             <ChevronLeft size={20} />
           </button>
           <div>
-            <h1 style={{ fontSize: '1.4rem', fontFamily: 'var(--font-head)', marginBottom: '2px' }}>
-              Add New Member
-            </h1>
-            <p style={{ color: 'var(--text-2)', fontSize: '0.85rem' }}>
-              Fill details to generate fitness assessment
-            </p>
+            <h2 style={{ fontSize: '1.4rem', margin: 0 }}>Quick Add Member</h2>
+            <p className="text-muted" style={{ fontSize: '13px' }}>Takes less than 10 seconds</p>
           </div>
         </div>
 
         {error && (
-          <div style={{
-            background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)',
-            borderRadius: '12px', padding: '14px 18px',
-            color: 'var(--error)', fontSize: '0.9rem', marginBottom: '20px',
-            display: 'flex', alignItems: 'center', gap: '8px'
-          }}>
-            ⚠️ {error}
+          <div className="badge badge-red mb-4 w-full justify-center p-3 text-sm">
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleGenerate}>
-
-          {/* Section: Personal Info */}
-          <div className="card-glass-blue" style={{
-            borderRadius: '24px', padding: '30px', marginBottom: '24px', position: 'relative', overflow: 'hidden'
-          }}>
-            <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '24px' }}>
-              👤 Personal Information
-            </h3>
-
+        <div className="card">
+          <form onSubmit={handleSave}>
             <div className="form-group">
-              <label>Member Name *</label>
-              <InputWrap icon={<User size={16} />}>
+              <label>Full Name *</label>
+              <div style={{ position: 'relative' }}>
+                <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
                 <input
-                  type="text" name="memberName" className="form-control" required
-                  placeholder="Full name" style={{ paddingLeft: '40px' }}
+                  type="text" name="memberName" className="form-control" required autoFocus
+                  placeholder="e.g. Rahul Sharma" style={{ paddingLeft: '38px' }}
                   value={formData.memberName} onChange={handleChange}
                 />
-              </InputWrap>
+              </div>
             </div>
 
             <div className="form-group">
-              <label>Phone Number</label>
-              <InputWrap icon={<Phone size={16} />}>
+              <label>Phone Number *</label>
+              <div style={{ position: 'relative' }}>
+                <Phone size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
                 <input
-                  type="tel" name="phone" className="form-control"
-                  placeholder="10-digit mobile number" style={{ paddingLeft: '40px' }}
+                  type="tel" name="phone" className="form-control" required
+                  placeholder="10-digit number" style={{ paddingLeft: '38px' }}
                   value={formData.phone} onChange={handleChange}
                 />
-              </InputWrap>
+              </div>
             </div>
 
-            <div className="grid-2" style={{ gap: '14px' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Age *</label>
-                <InputWrap icon={<span style={{ fontSize: '12px' }}>yr</span>}>
-                  <input
-                    type="number" name="age" className="form-control" required
-                    placeholder="25" min="1" max="120" style={{ paddingLeft: '40px' }}
-                    value={formData.age} onChange={handleChange}
-                  />
-                </InputWrap>
+            <div className="grid-2 gap-3 mb-4">
+              <div className="form-group mb-0">
+                <label>Plan Duration</label>
+                <select name="durationMonths" className="form-control" value={formData.durationMonths} onChange={handleChange}>
+                  <option value={1}>1 Month</option>
+                  <option value={3}>3 Months</option>
+                  <option value={6}>6 Months</option>
+                  <option value={12}>1 Year</option>
+                </select>
               </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Gender *</label>
-                <select name="gender" className="form-control" value={formData.gender} onChange={handleChange}>
-                  {Object.values(GENDERS).map(g => <option key={g} value={g}>{g}</option>)}
+              <div className="form-group mb-0">
+                <label>Payment Status</label>
+                <select name="paymentStatus" className="form-control" value={formData.paymentStatus} onChange={handleChange}>
+                  <option value="Paid">Paid</option>
+                  <option value="Pending">Pending</option>
                 </select>
               </div>
             </div>
 
-            <div className="grid-2" style={{ gap: '14px', marginTop: '14px' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Join Date *</label>
-                <input
-                  type="date" name="startDate" className="form-control" required
-                  value={formData.startDate} onChange={handleChange}
-                  style={{ color: 'var(--text)' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Expiry Date *</label>
-                <input
-                  type="date" name="endDate" className="form-control" required
-                  value={formData.endDate} onChange={handleChange}
-                  style={{ color: 'var(--text)' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section: Body Stats */}
-          <div className="card-glass-green" style={{
-            borderRadius: '24px', padding: '30px', marginBottom: '24px', position: 'relative', overflow: 'hidden'
-          }}>
-            <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '24px' }}>
-              📏 Body Measurements
-            </h3>
-            <div className="grid-2" style={{ gap: '14px' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Height (cm) *</label>
-                <InputWrap icon={<Ruler size={15} />}>
-                  <input
-                    type="number" name="height" className="form-control" required
-                    placeholder="170" min="1" max="300" style={{ paddingLeft: '40px' }}
-                    value={formData.height} onChange={handleChange}
-                  />
-                </InputWrap>
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Weight (kg) *</label>
-                <InputWrap icon={<Weight size={15} />}>
-                  <input
-                    type="number" name="weight" className="form-control" required
-                    placeholder="70" min="1" max="500" style={{ paddingLeft: '40px' }}
-                    value={formData.weight} onChange={handleChange}
-                  />
-                </InputWrap>
-              </div>
-            </div>
-          </div>
-
-          {/* Section: Fitness Goal */}
-          <div className="card-glass-pink" style={{
-            borderRadius: '24px', padding: '30px', marginBottom: '24px', position: 'relative', overflow: 'hidden'
-          }}>
-            <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '24px' }}>
-              🎯 Fitness Goal
-            </h3>
-
-            {/* Goal buttons */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-              {Object.values(GOALS).map(g => (
-                <button
-                  type="button" key={g}
-                  onClick={() => setFormData(prev => ({ ...prev, goal: g }))}
-                  style={{
-                    flex: 1, minWidth: '120px',
-                    padding: '14px 10px', borderRadius: '12px',
-                    border: formData.goal === g ? '2px solid var(--primary)' : '1px solid var(--border)',
-                    background: formData.goal === g ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.02)',
-                    cursor: 'pointer', transition: 'all 0.2s ease',
-                    color: formData.goal === g ? 'var(--primary-light)' : 'var(--text-2)',
-                    fontFamily: 'var(--font)', fontWeight: 600, fontSize: '0.85rem',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px'
-                  }}
-                >
-                  <span style={{ fontSize: '1.4rem' }}>{GOAL_ICONS[g] || '🏋️'}</span>
-                  {g}
-                </button>
-              ))}
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Activity Level</label>
-              <select name="activityLevel" className="form-control" value={formData.activityLevel} onChange={handleChange}>
-                {Object.values(ACTIVITY_LEVELS).map(a => (
-                  <option key={a} value={a}>{a} — {ACTIVITY_DESC[a] || ''}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            style={{
-              width: '100%', padding: '20px',
-              background: 'linear-gradient(135deg, #f72585, #7209b7)',
-              border: 'none', borderRadius: '20px', color: '#fff',
-              fontFamily: 'var(--font-head)', fontWeight: 800, fontSize: '1.2rem',
-              cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              boxShadow: '0 10px 30px rgba(247,37,133,0.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(247,37,133,0.6)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 10px 30px rgba(247,37,133,0.4)'; }}
-          >
-            <Activity size={24} /> GENERATE AI ASSESSMENT
-          </button>
-        </form>
+            <button type="submit" className="btn btn-primary w-full mt-2 flex items-center justify-center gap-2" disabled={loading} style={{ padding: '14px', fontSize: '15px' }}>
+              {loading ? 'Saving...' : <><QrCode size={18} /> Save & Generate QR</>}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

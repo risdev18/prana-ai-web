@@ -20,48 +20,96 @@ const Attendance = () => {
     r.memberName.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Generate fake heatmap data for the last 30 days
+  const heatmapData = Array.from({ length: 30 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    return {
+      date: d,
+      count: Math.floor(Math.random() * 50)
+    };
+  });
+
+  const getHeatmapColor = (count) => {
+    if (count === 0) return 'var(--bg)';
+    if (count < 10) return 'rgba(16, 185, 129, 0.3)'; // success with low opacity
+    if (count < 30) return 'rgba(16, 185, 129, 0.6)';
+    return 'rgba(16, 185, 129, 1)'; // var(--success)
+  };
+
   return (
-    <div className="animate-fade-up">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
+    <div>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-head)', lineHeight: 1.2 }}>Attendance Hub</h1>
-          <p style={{ color: 'var(--text-2)' }}>Monitor daily member check-ins securely via GPS.</p>
+          <h2>Attendance Hub</h2>
+          <p className="text-muted">Monitor check-ins and member consistency.</p>
         </div>
       </div>
 
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+      {/* Heatmap Section */}
+      <div className="card mb-6">
+        <h3 className="card-title">30-Day Activity Heatmap</h3>
+        <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '8px' }}>
+          {heatmapData.map((day, i) => (
+            <div 
+              key={i}
+              title={`${day.date.toLocaleDateString()}: ${day.count} check-ins`}
+              style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '4px',
+                background: getHeatmapColor(day.count),
+                border: '1px solid var(--border)',
+                flexShrink: 0
+              }}
+            />
+          ))}
+        </div>
+        <div className="flex justify-between mt-2">
+          <div className="text-muted text-sm">30 days ago</div>
+          <div className="text-muted text-sm flex gap-2 items-center">
+            Less 
+            <div style={{ display: 'flex', gap: '2px' }}>
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: getHeatmapColor(0) }} />
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: getHeatmapColor(5) }} />
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: getHeatmapColor(20) }} />
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: getHeatmapColor(40) }} />
+            </div>
+            More
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         
         {/* Toolbar */}
         <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-              <Calendar size={18} color="var(--primary-light)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              <Calendar size={18} color="var(--primary)" />
               <input 
                 type="date" 
                 value={date} 
                 onChange={(e) => setDate(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '14px', outline: 'none' }}
               />
             </div>
             
-            <div style={{ color: 'var(--text-2)', fontSize: '0.9rem' }}>
-              <strong style={{ color: '#fff' }}>{records.length}</strong> Check-ins today
+            <div style={{ color: 'var(--text-2)', fontSize: '14px' }}>
+              <strong style={{ color: 'var(--text)' }}>{records.length}</strong> Check-ins today
             </div>
           </div>
 
-          <div style={{ position: 'relative', width: '300px' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '300px' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
             <input
               type="text"
               placeholder="Search member name..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 10px 10px 36px',
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px', color: '#fff', fontSize: '0.85rem'
-              }}
+              className="form-control"
+              style={{ paddingLeft: '36px' }}
             />
           </div>
 
@@ -70,50 +118,55 @@ const Attendance = () => {
         {/* List */}
         <div style={{ minHeight: '400px' }}>
           {filteredRecords.length === 0 ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-              <MapPin size={48} color="rgba(255,255,255,0.1)" />
-              <div>No attendance records found for this date.</div>
+            <div className="empty-state" style={{ border: 'none' }}>
+              <MapPin size={48} />
+              <h3>No check-ins found</h3>
+              <p>No members have checked in on this date yet.</p>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Member</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Check-In Time</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Check-Out Time</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRecords.map(record => (
-                  <tr key={record.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                    <td style={{ padding: '16px 24px', fontWeight: 600, color: '#fff' }}>
-                      {record.memberName}
-                    </td>
-                    <td style={{ padding: '16px 24px', color: 'var(--text-2)', fontSize: '0.9rem' }}>
-                      {new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td style={{ padding: '16px 24px', color: 'var(--text-2)', fontSize: '0.9rem' }}>
-                      {record.checkOutTime 
-                        ? new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : '-'
-                      }
-                    </td>
-                    <td style={{ padding: '16px 24px' }}>
-                      {record.status === 'Completed' ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontSize: '0.85rem', fontWeight: 600 }}>
-                          <CheckCircle size={16} /> Completed
-                        </span>
-                      ) : (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary-light)', fontSize: '0.85rem', fontWeight: 600 }}>
-                          <Clock size={16} /> Inside Gym
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {filteredRecords.map(record => (
+                <div key={record.id} style={{ 
+                  display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', 
+                  padding: '16px 20px', borderBottom: '1px solid var(--border)', gap: '16px' 
+                }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '15px', minWidth: '150px' }}>
+                    {record.memberName}
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-3)', textTransform: 'uppercase' }}>In</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-2)' }}>
+                        {new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-3)', textTransform: 'uppercase' }}>Out</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-2)' }}>
+                        {record.checkOutTime 
+                          ? new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : '--:--'
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ minWidth: '100px', textAlign: 'right' }}>
+                    {record.status === 'Completed' ? (
+                      <span className="badge badge-green flex items-center justify-center gap-1" style={{ display: 'inline-flex' }}>
+                        <CheckCircle size={12} /> Completed
+                      </span>
+                    ) : (
+                      <span className="badge badge-purple flex items-center justify-center gap-1" style={{ display: 'inline-flex' }}>
+                        <Clock size={12} /> Inside Gym
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 

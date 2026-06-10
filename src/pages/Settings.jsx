@@ -1,197 +1,180 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Shield, Bell, Palette, Camera, Save, X, QrCode } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings as SettingsIcon, Save, Bell, MessageCircle, Users, Shield, Zap, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getGymLocation, updateGymLocation } from '../services/firestoreService';
-import QRCode from 'react-qr-code';
+import { useNavigate } from 'react-router-dom';
+
+const SettingsSection = ({ title, icon, children }) => (
+  <div className="card mb-4">
+    <div className="flex items-center gap-3 mb-4 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div style={{ color: 'var(--primary)' }}>{icon}</div>
+      <h3 style={{ margin: 0, fontSize: '16px' }}>{title}</h3>
+    </div>
+    {children}
+  </div>
+);
+
+const ToggleRow = ({ label, desc, value, onChange }) => (
+  <div className="flex justify-between items-center" style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+    <div>
+      <div style={{ fontWeight: 500, fontSize: '14px' }}>{label}</div>
+      {desc && <div className="text-muted text-sm">{desc}</div>}
+    </div>
+    <button
+      onClick={onChange}
+      style={{
+        width: '44px', height: '24px', borderRadius: '999px', position: 'relative',
+        background: value ? 'var(--primary)' : 'rgba(255,255,255,0.1)', border: 'none',
+        cursor: 'pointer', transition: 'background 0.2s ease', flexShrink: 0
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: '3px', left: value ? '23px' : '3px',
+        width: '18px', height: '18px', borderRadius: '50%',
+        background: '#fff', transition: 'left 0.2s ease'
+      }} />
+    </button>
+  </div>
+);
 
 const Settings = () => {
-  const { currentUser, gymData } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile'); // profile, location, qr, staff, notifications
+  const { gymData, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  const [gymName, setGymName] = useState(gymData?.gymName || '');
+  const [ownerName, setOwnerName] = useState(gymData?.ownerName || '');
+  const [phone, setPhone] = useState(gymData?.phone || '');
+  const [saved, setSaved] = useState(false);
 
-  // Location State
-  const [gymLat, setGymLat] = useState('');
-  const [gymLng, setGymLng] = useState('');
-  const [allowedRadius, setAllowedRadius] = useState(100);
-  const [locationStatus, setLocationStatus] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [notifications, setNotifications] = useState({
+    renewalAlerts: true,
+    inactivityAlerts: true,
+    paymentAlerts: true,
+    weeklyReport: false,
+  });
 
-  useEffect(() => {
-    if (currentUser && activeTab === 'location') {
-      getGymLocation(currentUser.uid).then(loc => {
-        if (loc) {
-          setGymLat(String(loc.gymLat));
-          setGymLng(String(loc.gymLng));
-          setAllowedRadius(loc.allowedRadius || 100);
-        }
-      });
-    }
-  }, [currentUser, activeTab]);
+  const [whatsapp, setWhatsapp] = useState({
+    renewalReminder: true,
+    welcomeMessage: true,
+    inactiveFollowUp: false,
+  });
 
-  const handleSaveLocation = async () => {
-    setIsSaving(true);
-    setLocationStatus('');
-    try {
-      await updateGymLocation(currentUser.uid, {
-        gymLat: parseFloat(gymLat),
-        gymLng: parseFloat(gymLng),
-        allowedRadius: parseFloat(allowedRadius)
-      });
-      setLocationStatus('Location saved successfully!');
-    } catch (err) {
-      setLocationStatus('Error saving location.');
-    } finally {
-      setIsSaving(false);
-    }
+  const handleToggle = (key, stateObj, setter) => {
+    setter(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const tabs = [
-    { id: 'profile', label: 'Gym Profile', icon: Camera },
-    { id: 'location', label: 'Location setup', icon: MapPin },
-    { id: 'qr', label: 'QR Setup', icon: QrCode },
-    { id: 'staff', label: 'Staff Roles', icon: Shield },
-    { id: 'notifications', label: 'Alerts', icon: Bell },
-  ];
+  const handleSave = () => {
+    // Simulate save with a brief state change
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
-    <div className="animate-fade-up">
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-head)', lineHeight: 1.2 }}>Settings</h1>
-        <p style={{ color: 'var(--text-2)' }}>Manage your gym's configuration and preferences.</p>
+    <div className="page" style={{ paddingBottom: '100px' }}>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2>Settings</h2>
+          <p className="text-muted">Manage your gym profile, notifications, and integrations.</p>
+        </div>
+        <button className="btn btn-primary" onClick={handleSave}>
+          {saved ? '✓ Saved!' : <><Save size={18} /> Save Changes</>}
+        </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
-        {/* Sidebar Nav */}
-        <div style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 16px', borderRadius: '10px',
-                background: activeTab === tab.id ? 'rgba(255,255,255,0.05)' : 'transparent',
-                border: 'none', color: activeTab === tab.id ? '#fff' : 'var(--text-2)',
-                cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem',
-                textAlign: 'left', transition: 'all 0.2s ease'
-              }}
+      <div className="grid-2 gap-4">
+        <div>
+          <SettingsSection title="Gym Profile" icon={<Zap size={20} />}>
+            <div className="form-group">
+              <label>Gym Name</label>
+              <input type="text" className="form-control" value={gymName} onChange={e => setGymName(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Owner Name</label>
+              <input type="text" className="form-control" value={ownerName} onChange={e => setOwnerName(e.target.value)} />
+            </div>
+            <div className="form-group mb-0">
+              <label>Contact Phone</label>
+              <input type="tel" className="form-control" value={phone} onChange={e => setPhone(e.target.value)} />
+            </div>
+          </SettingsSection>
+
+          <SettingsSection title="Staff & Roles" icon={<Shield size={20} />}>
+            <div className="empty-state" style={{ border: 'none', padding: '16px 0' }}>
+              <Users size={32} />
+              <h4 className="mt-3">Manage via Trainers</h4>
+              <p className="text-sm">Add receptionists and trainers in the Trainers module to control access levels.</p>
+              <button className="btn btn-outline mt-3" onClick={() => navigate('/trainers')}>
+                Go to Trainers
+              </button>
+            </div>
+          </SettingsSection>
+
+          <div className="card">
+            <button 
+              className="btn w-full" 
+              style={{ background: 'var(--error-bg)', color: 'var(--error)', justifyContent: 'center', gap: '8px' }}
+              onClick={handleLogout}
             >
-              <tab.icon size={18} color={activeTab === tab.id ? 'var(--primary-light)' : 'var(--text-3)'} />
-              {tab.label}
+              <LogOut size={18} /> Sign Out of Account
             </button>
-          ))}
+          </div>
         </div>
 
-        {/* Content Area */}
-        <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px', padding: '32px', minHeight: '400px' }}>
-          
-          {activeTab === 'profile' && (
-            <div className="animate-fade-in">
-              <h2 style={{ fontSize: '1.2rem', marginBottom: '24px' }}>Gym Profile</h2>
-              <div style={{ display: 'flex', gap: '32px' }}>
-                <div style={{ width: '120px', height: '120px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', cursor: 'pointer', border: '1px dashed var(--border)' }}>
-                  <Camera size={32} />
-                </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: '8px' }}>Gym Name</label>
-                    <input type="text" className="form-control" defaultValue={gymData?.gymName} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: '8px' }}>Owner Name</label>
-                    <input type="text" className="form-control" defaultValue={gymData?.ownerName} />
-                  </div>
-                  <button className="btn btn-primary" style={{ width: 'fit-content', marginTop: '16px' }}>Save Changes</button>
-                </div>
-              </div>
+        <div>
+          <SettingsSection title="Notifications" icon={<Bell size={20} />}>
+            <ToggleRow
+              label="Renewal Alerts"
+              desc="Alert when memberships are expiring within 5 days"
+              value={notifications.renewalAlerts}
+              onChange={() => handleToggle('renewalAlerts', notifications, setNotifications)}
+            />
+            <ToggleRow
+              label="Inactivity Alerts"
+              desc="Alert when a member has not attended for 7 days"
+              value={notifications.inactivityAlerts}
+              onChange={() => handleToggle('inactivityAlerts', notifications, setNotifications)}
+            />
+            <ToggleRow
+              label="Payment Alerts"
+              desc="Alert when a member has a pending payment"
+              value={notifications.paymentAlerts}
+              onChange={() => handleToggle('paymentAlerts', notifications, setNotifications)}
+            />
+            <ToggleRow
+              label="Weekly Summary"
+              desc="Get a weekly overview of gym performance"
+              value={notifications.weeklyReport}
+              onChange={() => handleToggle('weeklyReport', notifications, setNotifications)}
+            />
+          </SettingsSection>
+
+          <SettingsSection title="WhatsApp Integration" icon={<MessageCircle size={20} />}>
+            <div className="mb-4 p-3 rounded" style={{ background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.2)', borderRadius: '10px', fontSize: '13px', color: 'var(--text-2)' }}>
+              Messages are sent as pre-filled WhatsApp links (wa.me). No API key needed.
             </div>
-          )}
-
-          {activeTab === 'location' && (
-            <div className="animate-fade-in">
-              <h2 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>GPS Location Setup</h2>
-              <p style={{ color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: '24px' }}>
-                Configure the gym's coordinates to prevent fake check-ins. Members can only mark attendance within the allowed radius.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: '8px' }}>Latitude</label>
-                  <input type="text" className="form-control" value={gymLat} onChange={e => setGymLat(e.target.value)} placeholder="e.g. 18.5204" />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: '8px' }}>Longitude</label>
-                  <input type="text" className="form-control" value={gymLng} onChange={e => setGymLng(e.target.value)} placeholder="e.g. 73.8567" />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: '8px' }}>Allowed Radius (meters)</label>
-                  <input type="number" className="form-control" value={allowedRadius} onChange={e => setAllowedRadius(e.target.value)} placeholder="100" />
-                </div>
-                
-                {locationStatus && <div style={{ color: locationStatus.includes('Error') ? 'var(--error)' : 'var(--success)', fontSize: '0.85rem' }}>{locationStatus}</div>}
-
-                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                  <button className="btn btn-primary" onClick={handleSaveLocation} disabled={isSaving}>
-                    {isSaving ? 'Saving...' : 'Save Location'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'qr' && (
-            <div className="animate-fade-in" style={{ textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Gym Check-In QR Code</h2>
-              <p style={{ color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: '32px' }}>
-                Print this QR code and paste it at your gym's entrance.
-              </p>
-              
-              <div style={{ background: '#fff', padding: '32px', borderRadius: '24px', display: 'inline-block', marginBottom: '24px' }}>
-                <QRCode value={currentUser?.uid || ''} size={256} />
-              </div>
-              
-              <div>
-                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => window.print()}>
-                  Print QR Code
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'staff' && (
-            <div className="animate-fade-in">
-              <h2 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Staff & Roles</h2>
-              <p style={{ color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: '24px' }}>
-                Invite staff members and configure their permissions.
-              </p>
-              <div style={{ padding: '32px', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: '16px', color: 'var(--text-3)' }}>
-                Staff management module coming soon in phase 2.
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className="animate-fade-in">
-              <h2 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Notification Alerts</h2>
-              <p style={{ color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: '24px' }}>
-                Configure which alerts you want to receive.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                  <input type="checkbox" defaultChecked style={{ width: '18px', height: '18px' }} />
-                  <span>Membership Expiry Alerts (7 days before)</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                  <input type="checkbox" defaultChecked style={{ width: '18px', height: '18px' }} />
-                  <span>New Member Joined Alerts</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                  <input type="checkbox" defaultChecked style={{ width: '18px', height: '18px' }} />
-                  <span>Daily Revenue Summary</span>
-                </label>
-              </div>
-            </div>
-          )}
-          
+            <ToggleRow
+              label="Renewal Reminders"
+              desc="Activate one-click WhatsApp reminders in Renewals"
+              value={whatsapp.renewalReminder}
+              onChange={() => handleToggle('renewalReminder', whatsapp, setWhatsapp)}
+            />
+            <ToggleRow
+              label="Welcome Messages"
+              desc="Send a welcome WhatsApp to new members"
+              value={whatsapp.welcomeMessage}
+              onChange={() => handleToggle('welcomeMessage', whatsapp, setWhatsapp)}
+            />
+            <ToggleRow
+              label="Inactive Follow-ups"
+              desc="Suggest WhatsApp follow-up for inactive members"
+              value={whatsapp.inactiveFollowUp}
+              onChange={() => handleToggle('inactiveFollowUp', whatsapp, setWhatsapp)}
+            />
+          </SettingsSection>
         </div>
       </div>
     </div>

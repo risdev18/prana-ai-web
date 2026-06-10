@@ -20,6 +20,11 @@ import Attendance from './pages/Attendance';
 import AssessmentsList from './pages/AssessmentsList';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Renewals from './pages/Renewals';
+import Leads from './pages/Leads';
+import Trainers from './pages/Trainers';
+import Workouts from './pages/Workouts';
+import Onboarding from './pages/Onboarding';
 
 import './App.css';
 
@@ -54,6 +59,11 @@ const AppRoutes = () => {
       <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/renewals" element={<ProtectedRoute><Renewals /></ProtectedRoute>} />
+      <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+      <Route path="/trainers" element={<ProtectedRoute><Trainers /></ProtectedRoute>} />
+      <Route path="/workouts" element={<ProtectedRoute><Workouts /></ProtectedRoute>} />
+      <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" />} />

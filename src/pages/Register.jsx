@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerGym } from '../services/authService';
-import { Dumbbell, Mail, Lock, User, Building2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Building2, ArrowLeft, Eye, EyeOff, Zap } from 'lucide-react';
 
-const InputIcon = ({ icon, children, style = {} }) => (
-  <div style={{ position: 'relative', ...style }}>
-    <div style={{
-      position: 'absolute', left: '14px', top: '50%',
-      transform: 'translateY(-50%)', color: 'var(--text-3)',
-      display: 'flex', alignItems: 'center'
-    }}>{icon}</div>
+const InputIcon = ({ icon, children }) => (
+  <div style={{ position: 'relative' }}>
+    <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', display: 'flex', alignItems: 'center' }}>
+      {icon}
+    </div>
     {children}
   </div>
 );
@@ -33,7 +31,7 @@ const Register = () => {
     setLoading(true);
     try {
       await registerGym({ email, password, gymName, ownerName });
-      navigate('/dashboard');
+      navigate('/onboarding');
     } catch (err) {
       const msg = err.code === 'auth/email-already-in-use'
         ? 'This email is already registered. Please login instead.'
@@ -45,101 +43,43 @@ const Register = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', padding: '24px', position: 'relative'
-    }}>
-      {/* BG Image */}
-      <div style={{
-         position: 'fixed', inset: 0,
-         backgroundImage: 'url("https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=2069&auto=format&fit=crop")',
-         backgroundSize: 'cover',
-         backgroundPosition: 'center',
-         opacity: 0.2,
-         filter: 'contrast(1.2) grayscale(0.2)',
-         mixBlendMode: 'screen',
-         pointerEvents: 'none', zIndex: 0
-      }} />
-
-      {/* BG Orb */}
-      <div style={{
-        position: 'fixed', top: '-15%', right: '-10%',
-        width: '450px', height: '450px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(6,214,160,0.15) 0%, transparent 70%)',
-        pointerEvents: 'none', zIndex: 0
-      }} />
-
-      <div style={{ width: '100%', maxWidth: '420px', zIndex: 1 }} className="animate-fade-up">
+    <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ width: '100%', maxWidth: '420px' }}>
         <button
           onClick={() => navigate('/')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            background: 'none', border: 'none', color: 'var(--text-2)',
-            cursor: 'pointer', marginBottom: '28px', fontSize: '0.9rem',
-            fontFamily: 'var(--font)'
-          }}
+          className="btn btn-ghost"
+          style={{ padding: '8px', marginBottom: '32px', width: 'auto' }}
         >
           <ArrowLeft size={16} /> Back
         </button>
 
-        <div style={{ marginBottom: '28px' }}>
-          <div style={{
-            width: '52px', height: '52px', borderRadius: '14px',
-            background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: '16px', boxShadow: '0 4px 20px rgba(139,92,246,0.35)'
-          }}>
-            <Building2 size={26} color="#fff" />
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+            <Zap size={24} color="#fff" />
           </div>
-          <h1 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-head)', marginBottom: '6px' }}>
-            Register Your Gym
-          </h1>
-          <p style={{ color: 'var(--text-2)', fontSize: '0.95rem' }}>
-            Set up your gym on PRANA AI in seconds
-          </p>
+          <h1 style={{ marginBottom: '4px' }}>Register Your Gym</h1>
+          <p className="text-muted">Set up your gym on PRANA AI in seconds</p>
         </div>
 
-        <div className="card-glass-green" style={{
-          borderRadius: '24px',
-          padding: '32px',
-          backdropFilter: 'blur(20px)'
-        }}>
+        <div className="card">
           {error && (
-            <div style={{
-              background: 'rgba(244,63,94,0.1)',
-              border: '1px solid rgba(244,63,94,0.3)',
-              borderRadius: '10px', padding: '12px 16px',
-              marginBottom: '20px', color: 'var(--error)',
-              fontSize: '0.9rem'
-            }}>
-              ⚠️ {error}
+            <div style={{ background: 'var(--error-bg)', border: '1px solid var(--error)', borderRadius: '8px', padding: '12px', marginBottom: '20px', color: 'var(--error)', fontSize: '14px' }}>
+              {error}
             </div>
           )}
 
           <form onSubmit={handleRegister}>
-            <div className="grid-2" style={{ gap: '16px', marginBottom: '20px' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
+            <div className="grid-2">
+              <div className="form-group">
                 <label>Gym Name</label>
                 <InputIcon icon={<Building2 size={16} />}>
-                  <input
-                    type="text" className="form-control" required
-                    placeholder="Muscle Factory"
-                    style={{ paddingLeft: '40px' }}
-                    value={gymName}
-                    onChange={e => setGymName(e.target.value)}
-                  />
+                  <input type="text" className="form-control" required placeholder="Muscle Factory" style={{ paddingLeft: '40px' }} value={gymName} onChange={e => setGymName(e.target.value)} />
                 </InputIcon>
               </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
+              <div className="form-group">
                 <label>Owner Name</label>
                 <InputIcon icon={<User size={16} />}>
-                  <input
-                    type="text" className="form-control" required
-                    placeholder="Your Name"
-                    style={{ paddingLeft: '40px' }}
-                    value={ownerName}
-                    onChange={e => setOwnerName(e.target.value)}
-                  />
+                  <input type="text" className="form-control" required placeholder="Your Name" style={{ paddingLeft: '40px' }} value={ownerName} onChange={e => setOwnerName(e.target.value)} />
                 </InputIcon>
               </div>
             </div>
@@ -147,33 +87,15 @@ const Register = () => {
             <div className="form-group">
               <label>Email Address</label>
               <InputIcon icon={<Mail size={18} />}>
-                <input
-                  type="email" className="form-control" required
-                  placeholder="gym@email.com"
-                  style={{ paddingLeft: '44px' }}
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
+                <input type="email" className="form-control" required placeholder="gym@email.com" style={{ paddingLeft: '44px' }} value={email} onChange={e => setEmail(e.target.value)} />
               </InputIcon>
             </div>
 
             <div className="form-group">
               <label>Password</label>
               <InputIcon icon={<Lock size={18} />}>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  className="form-control" required
-                  placeholder="Min 6 characters"
-                  style={{ paddingLeft: '44px', paddingRight: '44px' }}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                />
-                <button type="button" onClick={() => setShowPass(!showPass)}
-                  style={{
-                    position: 'absolute', right: '14px', top: '50%',
-                    transform: 'translateY(-50%)', background: 'none',
-                    border: 'none', color: 'var(--text-3)', cursor: 'pointer'
-                  }}>
+                <input type={showPass ? 'text' : 'password'} className="form-control" required placeholder="Min 6 characters" style={{ paddingLeft: '44px', paddingRight: '44px' }} value={password} onChange={e => setPassword(e.target.value)} />
+                <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer' }}>
                   {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </InputIcon>
@@ -182,32 +104,20 @@ const Register = () => {
             <div className="form-group">
               <label>Confirm Password</label>
               <InputIcon icon={<Lock size={18} />}>
-                <input
-                  type="password" className="form-control" required
-                  placeholder="Repeat password"
-                  style={{ paddingLeft: '44px' }}
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                />
+                <input type="password" className="form-control" required placeholder="Repeat password" style={{ paddingLeft: '44px' }} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
               </InputIcon>
             </div>
 
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: '8px' }}>
-              {loading ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} />
-                  Creating Gym...
-                </span>
-              ) : '🏋️ Create My Gym'}
+            <button type="submit" disabled={loading} className="btn btn-primary w-full mt-4">
+              {loading ? 'Creating Gym...' : 'Create My Gym'}
             </button>
           </form>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: '20px', color: 'var(--text-2)', fontSize: '0.9rem' }}>
+        <p style={{ textAlign: 'center', marginTop: '24px', color: 'var(--text-2)', fontSize: '14px' }}>
           Already registered?{' '}
-          <span onClick={() => navigate('/login')}
-            style={{ color: 'var(--primary-light)', cursor: 'pointer', fontWeight: 600 }}>
-            Login here →
+          <span onClick={() => navigate('/login')} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>
+            Login here
           </span>
         </p>
       </div>

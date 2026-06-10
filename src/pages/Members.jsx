@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, Plus, UserCheck, Clock, UserX, AlertCircle, ChevronRight, X } from 'lucide-react';
+import { Users, Search, Plus, UserCheck, Clock, UserX, ChevronRight, X, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToMembers, subscribeToEnquiries, getMemberStatus } from '../services/firestoreService';
 import MemberProfileModal from '../components/MemberProfileModal';
@@ -34,7 +34,7 @@ const Members = () => {
   if (activeTab === 'active') displayData = activeMembers;
   else if (activeTab === 'expiring') displayData = expiringMembers;
   else if (activeTab === 'expired') displayData = expiredMembers;
-  else if (activeTab === 'leads') displayData = enquiries; // Different schema
+  else if (activeTab === 'leads') displayData = enquiries;
 
   const filteredData = displayData.filter(item => {
     const term = search.toLowerCase();
@@ -49,19 +49,20 @@ const Members = () => {
       onClick={() => setActiveTab(id)}
       style={{
         display: 'flex', alignItems: 'center', gap: '8px',
-        padding: '10px 16px', borderRadius: '10px',
-        background: activeTab === id ? 'rgba(99,102,241,0.15)' : 'transparent',
-        border: activeTab === id ? '1px solid rgba(99,102,241,0.3)' : '1px solid transparent',
+        padding: '10px 16px', borderRadius: '12px',
+        background: activeTab === id ? 'var(--primary)' : 'var(--bg-card)',
+        border: '1px solid',
+        borderColor: activeTab === id ? 'var(--primary)' : 'var(--border)',
         color: activeTab === id ? '#fff' : 'var(--text-2)',
-        cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem',
-        transition: 'all 0.2s'
+        cursor: 'pointer', fontWeight: 600, fontSize: '14px',
+        transition: 'all 0.2s', flexShrink: 0
       }}
     >
-      <Icon size={16} color={activeTab === id ? 'var(--primary-light)' : 'var(--text-3)'} />
+      <Icon size={16} color={activeTab === id ? '#fff' : 'var(--text-3)'} />
       {label}
       <span style={{
-        background: activeTab === id ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
-        padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', color: '#fff'
+        background: activeTab === id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)',
+        padding: '2px 8px', borderRadius: '999px', fontSize: '12px', color: activeTab === id ? '#fff' : 'var(--text-2)'
       }}>
         {count}
       </span>
@@ -69,41 +70,37 @@ const Members = () => {
   );
 
   return (
-    <div className="animate-fade-up">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+    <div>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: '2rem', fontFamily: 'var(--font-head)', lineHeight: 1.2 }}>Members Hub</h1>
-          <p style={{ color: 'var(--text-2)' }}>Manage memberships, renewals, and leads.</p>
+          <h2>Members Hub</h2>
+          <p className="text-muted">Manage memberships, renewals, and leads.</p>
         </div>
-        <button onClick={() => navigate('/add-member')} className="btn btn-primary" style={{ padding: '10px 20px', width: 'auto' }}>
+        <button onClick={() => navigate('/add-member')} className="btn btn-primary" style={{ display: 'none' /* hidden on mobile, relying on FAB */ }}>
           <Plus size={18} /> New Member
         </button>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '4px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
         <TabButton id="active" label="Active" icon={UserCheck} count={activeMembers.length} />
         <TabButton id="expiring" label="Expiring Soon" icon={Clock} count={expiringMembers.length} />
         <TabButton id="expired" label="Expired" icon={UserX} count={expiredMembers.length} />
-        <TabButton id="leads" label="Leads (CRM)" icon={Users} count={enquiries.length} />
+        <TabButton id="leads" label="Leads" icon={Users} count={enquiries.length} />
       </div>
 
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
-
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         {/* Toolbar */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ position: 'relative', width: '300px' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
             <input
               type="text"
-              placeholder="Search in current tab..."
+              placeholder="Search by name, phone, or ID..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 36px 10px 36px',
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px', color: '#fff', fontSize: '0.85rem'
-              }}
+              className="form-control"
+              style={{ paddingLeft: '36px' }}
             />
             {search && (
               <button 
@@ -113,7 +110,6 @@ const Members = () => {
                   background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}
-                title="Clear search"
               >
                 <X size={16} />
               </button>
@@ -124,69 +120,79 @@ const Members = () => {
         {/* List View */}
         <div style={{ minHeight: '400px' }}>
           {filteredData.length === 0 ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-3)' }}>
-              No records found.
+            <div className="empty-state" style={{ border: 'none' }}>
+              <Users size={48} />
+              <h3>No members found</h3>
+              <p>Add your first member to start tracking attendance and managing renewals.</p>
+              <button onClick={() => navigate('/add-member')} className="btn btn-primary mt-4">
+                <Plus size={18} /> Add Member
+              </button>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '12px 20px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Name</th>
-                  <th style={{ padding: '12px 20px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Contact</th>
-                  {activeTab !== 'leads' && <th style={{ padding: '12px 20px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>ID</th>}
-                  {activeTab !== 'leads' && <th style={{ padding: '12px 20px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Expiry</th>}
-                  {activeTab === 'leads' && <th style={{ padding: '12px 20px', textAlign: 'left', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Status</th>}
-                  <th style={{ padding: '12px 20px', textAlign: 'right', color: 'var(--text-3)', fontSize: '0.8rem', fontWeight: 600 }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.map(item => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                    <td style={{ padding: '16px 20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.8rem' }}>
-                          {item.memberName ? item.memberName[0] : (item.name ? item.name[0] : '?')}
-                        </div>
-                        <div style={{ fontWeight: 600, color: '#fff' }}>{item.memberName || item.name}</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {filteredData.map(item => (
+                <div key={item.id} style={{ 
+                  display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', 
+                  padding: '16px 20px', borderBottom: '1px solid var(--border)', gap: '16px' 
+                }}>
+                  
+                  {/* Avatar & Info */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '200px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '18px' }}>
+                      {item.memberName ? item.memberName[0] : (item.name ? item.name[0] : '?')}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '15px' }}>{item.memberName || item.name}</div>
+                      <div style={{ color: 'var(--text-2)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Phone size={12} /> {item.phone || 'N/A'}
+                        {item.shortId && <span style={{ background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>ID: {item.shortId}</span>}
                       </div>
-                    </td>
-                    <td style={{ padding: '16px 20px', color: 'var(--text-2)', fontSize: '0.85rem' }}>{item.phone || 'N/A'}</td>
+                    </div>
+                  </div>
 
-                    {activeTab !== 'leads' && (
-                      <td style={{ padding: '16px 20px' }}>
-                        <span style={{ background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'monospace' }}>
-                          {item.shortId}
-                        </span>
-                      </td>
-                    )}
-
-                    {activeTab !== 'leads' && (
-                      <td style={{ padding: '16px 20px', fontSize: '0.85rem' }}>
-                        <div style={{ color: activeTab === 'expired' ? 'var(--error)' : activeTab === 'expiring' ? 'var(--gold)' : 'var(--text)' }}>
+                  {/* Status & Expiry */}
+                  <div style={{ minWidth: '120px' }}>
+                    {activeTab !== 'leads' ? (
+                      <>
+                        <div style={{ fontSize: '12px', color: 'var(--text-3)', textTransform: 'uppercase' }}>Expires</div>
+                        <div style={{ 
+                          fontSize: '14px', fontWeight: 500,
+                          color: activeTab === 'expired' ? 'var(--error)' : activeTab === 'expiring' ? 'var(--warning)' : 'var(--text)' 
+                        }}>
                           {new Date(item.membershipEndDate).toLocaleDateString()}
                         </div>
-                      </td>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '12px', color: 'var(--text-3)', textTransform: 'uppercase' }}>Status</div>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary)' }}>{item.status || 'New Lead'}</div>
+                      </>
                     )}
+                  </div>
 
-                    {activeTab === 'leads' && (
-                      <td style={{ padding: '16px 20px' }}>
-                        <span className="badge badge-purple">{item.status || 'New'}</span>
-                      </td>
-                    )}
-
-                    <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                    {(activeTab === 'expiring' || activeTab === 'expired') && (
                       <button 
-                        className="btn btn-ghost" 
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', width: 'auto' }}
-                        onClick={() => setSelectedMember(item)}
+                        className="btn" 
+                        style={{ background: 'var(--success)', color: '#fff', padding: '6px 12px', fontSize: '13px' }}
+                        onClick={() => navigate('/renewals')}
                       >
-                        View <ChevronRight size={14} style={{ marginLeft: '4px' }} />
+                        Renew
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    )}
+                    <button 
+                      className="btn btn-ghost" 
+                      style={{ padding: '6px 12px', fontSize: '13px' }}
+                      onClick={() => setSelectedMember(item)}
+                    >
+                      View Profile
+                    </button>
+                  </div>
+
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
