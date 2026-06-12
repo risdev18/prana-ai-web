@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, User, Phone, CheckCircle, QrCode, Ruler, Weight, Target, Activity, DollarSign, Camera, Sparkles, Calendar, MessageCircle, Clipboard } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '../contexts/AuthContext';
-import { updateMember, markAttendance } from '../services/firestoreService';
+import { addMember, markAttendance } from '../services/firestoreService';
 import { GENDERS, ACTIVITY_LEVELS, GOALS } from '../core/constants';
 import { generateAssessment } from '../core/calculator';
 import QRCode from 'react-qr-code';
@@ -151,7 +151,7 @@ const AddMember = () => {
       }
 
       // Save directly if no fitness toggled
-      await updateMember(currentUser.uid, newMember);
+      await addMember(currentUser.uid, newMember);
       setSuccessMember(newMember);
     } catch (err) {
       setError(err.message || 'Failed to add member. Please try again.');
