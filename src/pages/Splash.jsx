@@ -89,7 +89,7 @@ const Splash = () => {
         </div>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowX: 'hidden' }}>
 
         {/* Hero Section */}
         <section style={{
