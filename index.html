@@ -22,5 +22,10 @@
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script nomodule>
+      var overlay = document.getElementById('error-overlay');
+      overlay.style.display = 'block';
+      overlay.innerHTML = '<div style="padding: 20px;"><h2>Unsupported Browser</h2><p>Your mobile browser does not support modern JavaScript modules, which Vite uses during development mode. Please use a modern browser, or run a production build.</p></div>';
+    </script>
   </body>
 </html>
