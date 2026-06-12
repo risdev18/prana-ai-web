@@ -13,22 +13,45 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        try {
-          const data = await getGymData(user.uid);
-          setGymData(data);
-        } catch (err) {
-          console.error("Failed to load gym data:", err);
+    // Safety timeout: if Firebase never responds (e.g. localStorage crash),
+    // force loading=false after 5s so the app doesn't show a blank screen.
+    const safetyTimer = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          console.warn('AuthContext: Firebase did not respond in 5s. Forcing app render.');
         }
-      } else {
-        setGymData(null);
-      }
-      setLoading(false);
-    });
+        return false;
+      });
+    }, 5000);
 
-    return unsubscribe;
+    let unsubscribe = () => {};
+
+    try {
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
+        clearTimeout(safetyTimer);
+        setCurrentUser(user);
+        if (user) {
+          try {
+            const data = await getGymData(user.uid);
+            setGymData(data);
+          } catch (err) {
+            console.error('Failed to load gym data:', err);
+          }
+        } else {
+          setGymData(null);
+        }
+        setLoading(false);
+      });
+    } catch (err) {
+      console.error('Firebase onAuthStateChanged failed:', err);
+      clearTimeout(safetyTimer);
+      setLoading(false);
+    }
+
+    return () => {
+      clearTimeout(safetyTimer);
+      unsubscribe();
+    };
   }, []);
 
   const value = {
