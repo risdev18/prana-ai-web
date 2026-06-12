@@ -10,6 +10,7 @@ import { subscribeToMembers, subscribeToAttendance, markAttendance, addEnquiry, 
 import MemberProfileModal from '../components/MemberProfileModal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
+import QRCode from 'react-qr-code';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -152,13 +154,22 @@ const Dashboard = () => {
             Operational dashboard &bull; {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        <button
-          onClick={() => navigate(`/checkin/${currentUser?.uid}`)}
-          className="btn btn-outline"
-          style={{ height: '40px', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: 'var(--radius-sm)' }}
-        >
-          <Scan size={15} style={{ color: 'var(--accent)' }} /> QR Scanner
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setShowQrModal(true)}
+            className="btn btn-primary"
+            style={{ height: '40px', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: 'var(--radius-sm)' }}
+          >
+            <Scan size={15} /> Show Gym QR
+          </button>
+          <button
+            onClick={() => navigate(`/checkin/${currentUser?.uid}`)}
+            className="btn btn-outline"
+            style={{ height: '40px', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: 'var(--radius-sm)' }}
+          >
+            Open Scanner
+          </button>
+        </div>
       </div>
 
       {/* KPI Stats Grid */}
@@ -508,6 +519,48 @@ const Dashboard = () => {
           gymId={currentUser.uid}
           onClose={() => setSelectedMember(null)}
         />
+      )}
+
+      {/* QR Code Modal */}
+      {showQrModal && currentUser && (
+        <div className="modal-overlay" onClick={() => setShowQrModal(false)}>
+          <div className="modal-panel" style={{ padding: '32px', textAlign: 'center', maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-head)', fontSize: '1.2rem' }}>Gym Check-In QR</h3>
+              <button onClick={() => setShowQrModal(false)} className="btn btn-ghost btn-icon">X</button>
+            </div>
+            
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '16px', display: 'inline-block', marginBottom: '24px' }}>
+              <QRCode
+                value={`${window.location.origin}/checkin/${currentUser.uid}`}
+                size={220}
+                level="H"
+              />
+            </div>
+            
+            <p style={{ color: 'var(--text-2)', fontSize: '14px', marginBottom: '24px' }}>
+              Members can scan this QR code to mark their attendance and enter their ID.
+            </p>
+            
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button 
+                className="btn btn-outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/checkin/${currentUser.uid}`);
+                  toast.success('Link copied!');
+                }}
+              >
+                Copy Link
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={() => window.open(`/checkin/${currentUser.uid}`, '_blank')}
+              >
+                Open Page
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
