@@ -72,20 +72,20 @@ const Splash = () => {
       {/* Premium Navbar */}
       <header style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '12px 48px', borderBottom: '1px solid rgba(255,255,255,0.04)',
+        padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)',
         position: 'sticky', top: 0, background: 'rgba(7,5,20,0.5)', zIndex: 100,
         backdropFilter: 'blur(24px) saturate(150%)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.05em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.05em', flexShrink: 0 }}>
           <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #7C5CFF, #00D4FF)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(124,92,255,0.4)' }}>
             <Zap size={16} color="#fff" />
           </div>
           PRANA AI
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button onClick={() => navigate('/member-portal')} className="btn btn-ghost" style={{ fontSize: '13px', padding: '8px 16px', height: '38px', gap: '6px' }}><Smartphone size={14} /> Member Portal</button>
-          <button onClick={() => navigate('/login')} className="btn btn-outline" style={{ fontSize: '13px', padding: '8px 20px', height: '38px', background: 'rgba(255,255,255,0.03)' }}>Gym Login</button>
-          <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ fontSize: '13px', padding: '8px 24px', height: '38px' }}>Start Managing</button>
+        <div className="splash-nav-buttons" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={() => navigate('/member-portal')} className="btn btn-ghost" style={{ fontSize: '12px', padding: '6px 12px', height: '36px', gap: '5px' }}><Smartphone size={13} /> Member Portal</button>
+          <button onClick={() => navigate('/login')} className="btn btn-outline" style={{ fontSize: '12px', padding: '6px 14px', height: '36px', background: 'rgba(255,255,255,0.03)' }}>Gym Login</button>
+          <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 16px', height: '36px' }}>Start Free</button>
         </div>
       </header>
 

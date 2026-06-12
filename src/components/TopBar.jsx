@@ -164,17 +164,17 @@ const TopBar = ({ onSelectMember, onMenuClick }) => {
  
       {/* Right Side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* Quick add */}
+        {/* Quick add — hidden on mobile (FAB handles it) */}
         <button
           onClick={() => navigate('/add-member')}
-          className="btn btn-primary"
+          className="btn btn-primary hide-mobile"
           style={{ height: '36px', padding: '0 16px', fontSize: '12.5px', borderRadius: 'var(--radius-sm)' }}
         >
           <Plus size={14} /> Add Member
         </button>
  
         {/* Profile */}
-        <div style={{
+        <div className="hide-mobile" style={{
           width: '32px', height: '32px', borderRadius: '50%',
           background: 'linear-gradient(135deg, var(--primary-dim) 0%, rgba(93, 169, 255, 0.05) 100%)',
           border: '1px solid rgba(124, 92, 255, 0.25)',

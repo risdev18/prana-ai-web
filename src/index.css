@@ -251,7 +251,12 @@ a:hover {
 }
 
 .mobile-menu-btn {
-  display: none !important;
+  display: none;
+}
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex !important;
+  }
 }
 
 /* ─── SKELETON LOADER ─── */
@@ -981,31 +986,81 @@ textarea.form-control {
    MOBILE RESPONSIVE
 ═══════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  /* Sidebar: hidden off-screen, slides in when .open */
   .sidebar {
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .sidebar.open {
     transform: translateX(0);
   }
-  .main-content {
-    margin-left: 0;
-    padding-bottom: 60px;
+  .sidebar-overlay.show {
+    display: block;
   }
+
+  /* Main content: no sidebar margin, leave room for bottom-nav */
+  .main-content {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  /* Bottom nav visible on mobile */
   .bottom-nav {
     display: flex;
   }
+
+  /* FAB position adjusted for bottom-nav */
   .fab {
-    bottom: 72px;
+    bottom: 76px;
     right: 16px;
     width: 48px;
     height: 48px;
   }
+
+  /* Page content padding — bottom must clear bottom-nav + FAB */
   .page {
-    padding: 16px 16px 80px;
+    padding: 16px 12px 100px;
   }
-  h1 { font-size: 24px; }
-  h2 { font-size: 20px; }
+
+  /* Headings scale */
+  h1 { font-size: 22px !important; }
+  h2 { font-size: 18px !important; }
+
+  /* Cards full-width on mobile */
+  .card {
+    border-radius: var(--radius-lg);
+  }
+
+  /* Stat cards single column on tiny screens */
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tables: allow horizontal scroll */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Topbar padding tighter */
+  .topbar {
+    padding: 0 12px;
+  }
+
+  /* Splash page navbar compact */
+  .splash-nav-buttons .btn-ghost {
+    display: none;
+  }
+  .splash-nav-buttons {
+    gap: 6px !important;
+  }
+}
+
+/* Small phones — extra compact */
+@media (max-width: 380px) {
+  .splash-nav-buttons .btn-outline {
+    display: none;
+  }
 }
 
 /* ═══════════════════════════════════════════════════

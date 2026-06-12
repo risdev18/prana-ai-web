@@ -13,7 +13,7 @@ const MainLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="app-container" style={{ position: 'relative', overflow: 'hidden' }}>
+    <div className="app-container" style={{ position: 'relative' }}>
       {/* Glowing Mesh Orbs Backdrop */}
       <div style={{
         position: 'fixed',
@@ -66,8 +66,8 @@ const MainLayout = ({ children }) => {
       {/* Main Content Area */}
       <div className="main-content" style={{ position: 'relative', zIndex: 1 }}>
         <TopBar onSelectMember={setSelectedMember} onMenuClick={() => setIsSidebarOpen(true)} />
-        <main style={{ flex: 1, padding: '24px', position: 'relative', overflowY: 'auto' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <main style={{ flex: 1, position: 'relative', overflowX: 'hidden' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '24px 16px 100px' }}>
             {children}
           </div>
         </main>
