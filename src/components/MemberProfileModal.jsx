@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, Activity, Medal, TrendingUp, AlertTriangle } from 'lucide-react';
-import { subscribeToMemberTimeline } from '../services/firestoreService';
+import { X, Calendar, Activity, Medal, TrendingUp, AlertTriangle, Trash2 } from 'lucide-react';
+import { subscribeToMemberTimeline, deleteMember } from '../services/firestoreService';
+import ConfirmModal from './ConfirmModal';
+import toast from 'react-hot-toast';
 
 const MemberProfileModal = ({ member, gymId, onClose }) => {
   const [timeline, setTimeline] = useState([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     if (member?.id && gymId) {
@@ -11,6 +14,16 @@ const MemberProfileModal = ({ member, gymId, onClose }) => {
       return () => unsub();
     }
   }, [member?.id, gymId]);
+
+  const handleDelete = async () => {
+    try {
+      await deleteMember(gymId, member.id);
+      toast.success('Member profile deleted');
+      onClose();
+    } catch (err) {
+      toast.error('Failed to delete member');
+    }
+  };
 
   if (!member) return null;
 
@@ -137,8 +150,30 @@ const MemberProfileModal = ({ member, gymId, onClose }) => {
             </div>
           </div>
           
+          
+          <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+            <button 
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="btn" 
+              style={{ width: '100%', padding: '12px', background: 'var(--error-bg)', color: 'var(--error)', border: '1px solid var(--error-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <Trash2 size={16} /> Delete Member Profile
+            </button>
+          </div>
+          
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Delete Member"
+        message={`Are you sure you want to completely delete ${member.memberName}'s profile? This will erase all their attendance and payment data permanently.`}
+        confirmText="Delete Member"
+        isDestructive={true}
+        onConfirm={handleDelete}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
+
       <style>{`
         @keyframes slideInRight {
           from { transform: translateX(100%); }

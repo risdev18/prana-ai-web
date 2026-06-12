@@ -7,9 +7,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-const NavItem = ({ to, icon: Icon, label, badge }) => (
+const NavItem = ({ to, icon: Icon, label, badge, onClick }) => (
   <NavLink
     to={to}
+    onClick={onClick}
     style={({ isActive }) => ({
       display: 'flex',
       alignItems: 'center',
@@ -74,7 +75,7 @@ const NavSection = ({ label, children }) => (
   </div>
 );
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
   const { logout, gymData } = useAuth();
   const navigate = useNavigate();
 
@@ -84,7 +85,7 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="sidebar" style={{ background: 'rgba(7, 5, 20, 0.75)', borderRight: '1px solid var(--border)' }}>
+    <div className={`sidebar ${isOpen ? 'open' : ''}`} style={{ background: 'rgba(7, 5, 20, 0.75)', borderRight: '1px solid var(--border)' }}>
       {/* Brand Header */}
       <div style={{
         height: '64px',
@@ -130,22 +131,22 @@ const Sidebar = () => {
       {/* Navigation List */}
       <nav style={{ flex: 1, padding: '20px 10px', overflowY: 'auto' }}>
         <NavSection label="Operations">
-          <NavItem to="/dashboard"  icon={LayoutDashboard} label="Dashboard" />
-          <NavItem to="/members"    icon={Users}           label="Members" />
-          <NavItem to="/renewals"   icon={RefreshCw}       label="Renewals" />
-          <NavItem to="/attendance" icon={CalendarCheck}   label="Attendance" />
-          <NavItem to="/leads"      icon={UserPlus}        label="Leads" />
-          <NavItem to="/queries"    icon={MessageSquare}   label="Queries" />
+          <NavItem to="/dashboard"  icon={LayoutDashboard} label="Dashboard" onClick={onClose} />
+          <NavItem to="/members"    icon={Users}           label="Members" onClick={onClose} />
+          <NavItem to="/renewals"   icon={RefreshCw}       label="Renewals" onClick={onClose} />
+          <NavItem to="/attendance" icon={CalendarCheck}   label="Attendance" onClick={onClose} />
+          <NavItem to="/leads"      icon={UserPlus}        label="Leads" onClick={onClose} />
+          <NavItem to="/queries"    icon={MessageSquare}   label="Queries" onClick={onClose} />
         </NavSection>
 
         <NavSection label="Fitness Core">
-          <NavItem to="/workouts"    icon={ClipboardList} label="Workouts" />
-          <NavItem to="/assessments" icon={Activity}      label="Assessments" />
+          <NavItem to="/workouts"    icon={ClipboardList} label="Workouts" onClick={onClose} />
+          <NavItem to="/assessments" icon={Activity}      label="Assessments" onClick={onClose} />
         </NavSection>
 
         <NavSection label="Management">
-          <NavItem to="/trainers" icon={Dumbbell} label="Trainers" />
-          <NavItem to="/settings" icon={Settings} label="Settings" />
+          <NavItem to="/trainers" icon={Dumbbell} label="Trainers" onClick={onClose} />
+          <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} />
         </NavSection>
       </nav>
 

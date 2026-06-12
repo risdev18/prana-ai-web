@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Search, Bell, Plus, UserPlus } from 'lucide-react';
+import { Search, Bell, Plus, UserPlus, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToMembers } from '../services/firestoreService';
 
-const TopBar = ({ onSelectMember }) => {
+const TopBar = ({ onSelectMember, onMenuClick }) => {
   const { gymData, currentUser } = useAuth();
   const navigate = useNavigate();
   const [members, setMembers] = useState([]);
@@ -61,6 +61,15 @@ const TopBar = ({ onSelectMember }) => {
       zIndex: 100,
       gap: '16px',
     }}>
+      {/* Mobile Menu Button */}
+      <button 
+        className="btn btn-ghost mobile-menu-btn" 
+        onClick={onMenuClick}
+        style={{ padding: '8px', height: 'auto', color: 'var(--text)' }}
+      >
+        <Menu size={20} />
+      </button>
+
       {/* Search */}
       <div ref={searchRef} style={{ flex: 1, maxWidth: '380px', position: 'relative' }}>
         <Search size={14} style={{

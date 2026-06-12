@@ -7,6 +7,7 @@ import { addMember, markAttendance } from '../services/firestoreService';
 import { GENDERS, ACTIVITY_LEVELS, GOALS } from '../core/constants';
 import { generateAssessment } from '../core/calculator';
 import QRCode from 'react-qr-code';
+import toast from 'react-hot-toast';
 
 const GOAL_ICONS = {
   'Cut': '🔥',
@@ -34,7 +35,8 @@ const AddMember = () => {
   const [formData, setFormData] = useState({
     memberName: '',
     phone: '',
-    durationMonths: 1,
+    membershipStartDate: todayStr,
+    membershipEndDate: nextMonthStr,
     paymentStatus: 'Paid',
     membershipFee: 1500,
     amountPaid: 1500,
@@ -88,22 +90,17 @@ const AddMember = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.memberName.trim()) return setError('Name is required');
-    if (!formData.phone.trim()) return setError('Phone number is required');
+    if (!formData.memberName.trim()) return toast.error('Name is required');
+    if (!formData.phone.trim()) return toast.error('Phone number is required');
 
     const fee = parseFloat(formData.membershipFee);
     const paid = parseFloat(formData.amountPaid);
-    if (isNaN(fee) || fee < 0) return setError('Invalid membership fee');
-    if (isNaN(paid) || paid < 0 || paid > fee) return setError('Amount paid must be between 0 and the total fee');
+    if (isNaN(fee) || fee < 0) return toast.error('Invalid membership fee');
+    if (isNaN(paid) || paid < 0 || paid > fee) return toast.error('Amount paid must be between 0 and the total fee');
 
     setLoading(true);
-    setError('');
 
     try {
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + parseInt(formData.durationMonths));
-
       const gymName = gymData?.gymName || 'GYM';
       const prefix = gymName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 4);
       const shortId = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -113,9 +110,9 @@ const AddMember = () => {
         shortId,
         memberName: formData.memberName.trim(),
         phone: formData.phone.trim(),
-        membershipStartDate: startDate.toISOString().split('T')[0],
-        membershipEndDate: endDate.toISOString().split('T')[0],
-        durationMonths: parseInt(formData.durationMonths),
+        membershipStartDate: formData.membershipStartDate,
+        membershipEndDate: formData.membershipEndDate,
+        durationMonths: Math.round((new Date(formData.membershipEndDate) - new Date(formData.membershipStartDate)) / (1000 * 60 * 60 * 24 * 30)),
         paymentStatus: formData.paymentStatus,
         membershipFee: fee,
         amountPaid: paid,
@@ -153,8 +150,9 @@ const AddMember = () => {
       // Save directly if no fitness toggled
       await addMember(currentUser.uid, newMember);
       setSuccessMember(newMember);
+      toast.success('Member added successfully!');
     } catch (err) {
-      setError(err.message || 'Failed to add member. Please try again.');
+      toast.error(err.message || 'Failed to add member.');
     } finally {
       setLoading(false);
     }
@@ -166,8 +164,9 @@ const AddMember = () => {
       const todayStr = new Date().toISOString().split('T')[0];
       await markAttendance(currentUser.uid, todayStr, successMember.memberId, successMember.memberName);
       setAttendanceCheckedIn(true);
+      toast.success('Checked in today!');
     } catch (err) {
-      alert('Failed to mark check-in.');
+      toast.error('Failed to mark check-in.');
     }
   };
 
@@ -179,8 +178,7 @@ const AddMember = () => {
     
     let text = `Hi ${member.memberName}, welcome to ${gymName}! 🏋️\n`;
     text += `Your Gym Member ID: ${member.shortId}\n`;
-    text += `Plan Duration: ${member.durationMonths} Month(s)\n`;
-    text += `Expiry Date: ${new Date(member.membershipEndDate).toLocaleDateString()}\n`;
+    text += `Membership Ends On: ${new Date(member.membershipEndDate).toLocaleDateString()}\n`;
     
     if (balance > 0) {
       text += `Pending Balance: ₹${balance}\n`;
@@ -298,12 +296,6 @@ const AddMember = () => {
           </div>
         </div>
 
-        {error && (
-          <div className="badge badge-red mb-4 w-full justify-start p-3 text-sm flex items-center gap-2">
-            ⚠️ {error}
-          </div>
-        )}
-
         <form onSubmit={handleSave}>
           {/* TAB 1: Billing & Basic Info */}
           <div className="card" style={{ marginBottom: '20px', padding: '24px' }}>
@@ -359,21 +351,35 @@ const AddMember = () => {
 
             <div className="grid-2 gap-3">
               <div className="form-group mb-0">
-                <label>Plan Duration</label>
-                <select name="durationMonths" className="form-control" value={formData.durationMonths} onChange={handleChange}>
-                  <option value={1}>1 Month</option>
-                  <option value={3}>3 Months</option>
-                  <option value={6}>6 Months</option>
-                  <option value={12}>1 Year</option>
-                </select>
+                <label>Start Date</label>
+                <div style={{ position: 'relative' }}>
+                  <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
+                  <input
+                    type="date" name="membershipStartDate" className="form-control"
+                    style={{ paddingLeft: '38px' }}
+                    value={formData.membershipStartDate} onChange={handleChange}
+                  />
+                </div>
               </div>
               <div className="form-group mb-0">
-                <label>Payment Status</label>
-                <select name="paymentStatus" className="form-control" value={formData.paymentStatus} onChange={handleChange}>
-                  <option value="Paid">Fully Paid</option>
-                  <option value="Pending">Pending / Balance Due</option>
-                </select>
+                <label>End Date</label>
+                <div style={{ position: 'relative' }}>
+                  <Calendar size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
+                  <input
+                    type="date" name="membershipEndDate" className="form-control"
+                    style={{ paddingLeft: '38px' }}
+                    value={formData.membershipEndDate} onChange={handleChange}
+                  />
+                </div>
               </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '14px' }}>
+              <label>Payment Status</label>
+              <select name="paymentStatus" className="form-control" value={formData.paymentStatus} onChange={handleChange}>
+                <option value="Paid">Fully Paid</option>
+                <option value="Pending">Pending / Balance Due</option>
+              </select>
             </div>
 
             <div className="grid-2 gap-3" style={{ marginTop: '14px' }}>

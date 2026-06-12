@@ -10,7 +10,7 @@ import MemberProfileModal from '../components/MemberProfileModal';
 
 const Members = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, gymData } = useAuth();
   const [members, setMembers] = useState([]);
   const [enquiries, setEnquiries] = useState([]);
   const [search, setSearch] = useState('');
@@ -68,10 +68,27 @@ const Members = () => {
     if (!phone) return '#';
     const fp = phone.length === 10 ? `91${phone}` : phone;
     const bal = (m.membershipFee || 0) - (m.amountPaid || 0);
-    let txt = `Hi ${m.memberName || m.name}! Regarding your gym membership`;
-    if (bal > 0) txt += ` — outstanding dues: ₹${bal}. Please settle soon.`;
-    else txt += ` — please renew to continue checking in.`;
-    return `https://wa.me/${fp}?text=${encodeURIComponent(txt)}`;
+    const gymName = gymData?.gymName || 'our gym';
+    const dateStr = new Date(m.membershipEndDate).toLocaleDateString('en-GB');
+
+    let text = `Hi ${m.memberName || m.name} 👋\n\n`;
+
+    if (m.status === 'Expired') {
+      text += `Your membership at ${gymName} expired on ${dateStr}.\n\n`;
+      text += `Renew now to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
+    } else if (m.status === 'Expiring Soon') {
+      text += `Your membership at ${gymName} will expire on ${dateStr}.\n\n`;
+      text += `Renew now to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
+    } else if (bal > 0) {
+      text += `You have an outstanding balance of ₹${bal} at ${gymName}.\n\n`;
+      text += `Kindly clear your dues to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
+    } else {
+      text += `We hope you are enjoying your workouts at ${gymName}!\n\n`;
+    }
+
+    text += `Thank you,\nTeam ${gymName}`;
+
+    return `https://api.whatsapp.com/send?phone=${fp}&text=${encodeURIComponent(text)}`;
   };
 
   return (

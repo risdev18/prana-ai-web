@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { RefreshCw, MessageCircle, AlertTriangle, Phone, CheckCircle, Bell, TrendingDown, Clock, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToMembers, getMemberStatus, updateMember } from '../services/firestoreService';
+import toast from 'react-hot-toast';
 
 const Renewals = () => {
   const { currentUser, gymData } = useAuth();
@@ -34,25 +35,25 @@ const Renewals = () => {
     const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
     const gymName = gymData?.gymName || 'our gym';
     const balance = (member.membershipFee || 0) - (member.amountPaid || 0);
-    const end = new Date(member.membershipEndDate);
-    const now = new Date();
-    const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-    const absDays = Math.abs(diffDays);
-    const months = Math.floor(absDays / 30);
-    const days = absDays % 30;
-    const timeStr = months > 0 ? `${months} month${months > 1 ? 's' : ''} ${days} day${days !== 1 ? 's' : ''}` : `${absDays} day${absDays !== 1 ? 's' : ''}`;
+    let text = `Hi ${member.memberName} 👋\n\n`;
+    const dateStr = new Date(member.membershipEndDate).toLocaleDateString('en-GB');
 
-    let text = `Hi ${member.memberName}, this is a message from *${gymName}* 🏋️\n\n`;
     if (member.status === 'Expired') {
-      text += `⚠️ *Membership Expired*\nYour membership expired ${timeStr} ago (on ${new Date(member.membershipEndDate).toLocaleDateString()}).\n\n`;
+      text += `Your membership at ${gymName} expired on ${dateStr}.\n\n`;
+      text += `Renew now to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
+    } else if (member.status === 'Expiring Soon') {
+      text += `Your membership at ${gymName} will expire on ${dateStr}.\n\n`;
+      text += `Renew now to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
+    } else if (balance > 0) {
+      text += `You have an outstanding balance of ₹${balance} at ${gymName}.\n\n`;
+      text += `Kindly clear your dues to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
     } else {
-      text += `📅 *Membership Expiring Soon*\nYour membership expires in *${timeStr}* (on ${new Date(member.membershipEndDate).toLocaleDateString()}).\n\n`;
+      text += `We hope you are enjoying your workouts at ${gymName}!\n\n`;
     }
-    if (balance > 0) {
-      text += `💸 *Outstanding Dues: ₹${balance}*\nKindly clear your balance to avoid service interruption.\n\n`;
-    }
-    text += `Please renew your membership to continue enjoying our facilities. Thank you! 🙏`;
-    return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`;
+
+    text += `Thank you,\nTeam ${gymName}`;
+
+    return `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`;
   };
 
   const handleRenew = async (member) => {
@@ -250,7 +251,7 @@ const Renewals = () => {
                         }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,211,102,0.2)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'rgba(37,211,102,0.12)'; e.currentTarget.style.transform = ''; }}
-                        onClick={e => { if (!item.phone) { e.preventDefault(); alert('Add a phone number first.'); } }}
+                        onClick={e => { if (!item.phone || item.phone.trim() === '') { e.preventDefault(); toast.error('Add a phone number first.'); } }}
                       >
                         <MessageCircle size={15} />
                         <span className="hide-mobile">WhatsApp</span>

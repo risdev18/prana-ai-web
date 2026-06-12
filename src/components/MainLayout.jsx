@@ -10,6 +10,7 @@ const MainLayout = ({ children }) => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [selectedMember, setSelectedMember] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
     <div className="app-container" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -53,12 +54,18 @@ const MainLayout = ({ children }) => {
         }} />
       </div>
 
-      {/* Fixed Sidebar for Desktop */}
-      <Sidebar />
+      {/* Sidebar Overlay */}
+      <div 
+        className={`sidebar-overlay ${isSidebarOpen ? 'show' : ''}`} 
+        onClick={() => setIsSidebarOpen(false)} 
+      />
+
+      {/* Fixed Sidebar for Desktop & Slide-over for Mobile */}
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
       {/* Main Content Area */}
       <div className="main-content" style={{ position: 'relative', zIndex: 1 }}>
-        <TopBar onSelectMember={setSelectedMember} />
+        <TopBar onSelectMember={setSelectedMember} onMenuClick={() => setIsSidebarOpen(true)} />
         <main style={{ flex: 1, padding: '24px', position: 'relative', overflowY: 'auto' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
             {children}

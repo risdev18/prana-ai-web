@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Settings as SettingsIcon, Save, Bell, MessageCircle, Users, Shield, Zap, LogOut, CheckCircle, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 const ToggleSwitch = ({ value, onChange }) => (
   <button
@@ -70,7 +72,7 @@ const Settings = () => {
   const [gymName, setGymName] = useState(gymData?.gymName || '');
   const [ownerName, setOwnerName] = useState(gymData?.ownerName || '');
   const [phone, setPhone] = useState(gymData?.phone || '');
-  const [saved, setSaved] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const [notifications, setNotifications] = useState({
     renewalAlerts: true,
@@ -90,11 +92,11 @@ const Settings = () => {
   };
 
   const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    // Save to firestore logic can be added here
+    toast.success('Settings saved successfully!');
   };
 
-  const handleLogout = async () => {
+  const executeLogout = async () => {
     await logout();
     navigate('/login');
   };
@@ -123,13 +125,13 @@ const Settings = () => {
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
               padding: '10px 20px', borderRadius: '12px', border: 'none',
-              background: saved ? 'linear-gradient(135deg, #00E676, #00b5da)' : 'linear-gradient(135deg, #7C5CFF, #5DA9FF)',
+              background: 'linear-gradient(135deg, #7C5CFF, #5DA9FF)',
               color: '#fff', fontFamily: 'var(--font)', fontWeight: 700, fontSize: '14px',
               cursor: 'pointer', transition: 'all 0.3s ease',
-              boxShadow: saved ? '0 4px 16px rgba(0,230,118,0.4)' : '0 4px 16px rgba(124,92,255,0.35)'
+              boxShadow: '0 4px 16px rgba(124,92,255,0.35)'
             }}
           >
-            {saved ? <><CheckCircle size={16} /> Saved!</> : <><Save size={16} /> Save Changes</>}
+            <Save size={16} /> Save Changes
           </button>
         </div>
       </div>
@@ -180,7 +182,7 @@ const Settings = () => {
               Danger Zone
             </div>
             <button
-              onClick={handleLogout}
+              onClick={() => setIsLogoutModalOpen(true)}
               style={{
                 width: '100%', padding: '12px', borderRadius: '10px',
                 background: 'rgba(255,94,126,0.08)', border: '1px solid rgba(255,94,126,0.25)',
@@ -277,6 +279,16 @@ const Settings = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your account?"
+        confirmText="Sign Out"
+        isDestructive={true}
+        onConfirm={executeLogout}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
     </div>
   );
 };

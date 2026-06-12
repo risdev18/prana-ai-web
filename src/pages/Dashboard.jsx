@@ -2,11 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, Clock, CalendarCheck, UserPlus, CheckCircle,
-  MessageCircle, Scan, RefreshCw, Users, ArrowRight, Zap, TrendingDown
+  MessageCircle, Scan, RefreshCw, Users, ArrowRight, Zap, TrendingDown,
+  Activity as ActivityIcon, DollarSign
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { subscribeToMembers, subscribeToAttendance, markAttendance, addEnquiry } from '../services/firestoreService';
+import { subscribeToMembers, subscribeToAttendance, markAttendance, addEnquiry, subscribeToTransactions, subscribeToRecentActivity } from '../services/firestoreService';
 import MemberProfileModal from '../components/MemberProfileModal';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import toast from 'react-hot-toast';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,21 +19,29 @@ const Dashboard = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [checkInId, setCheckInId] = useState('');
   const [checkInLoading, setCheckInLoading] = useState(false);
-  const [checkInMsg, setCheckInMsg] = useState('');
-  const [checkInErr, setCheckInErr] = useState('');
   const [walkinName, setWalkinName] = useState('');
   const [walkinPhone, setWalkinPhone] = useState('');
   const [walkinLoading, setWalkinLoading] = useState(false);
-  const [walkinSuccess, setWalkinSuccess] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  
+  const [transactions, setTransactions] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const todayStr = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) return;
     const u1 = subscribeToMembers(currentUser.uid, setMembers);
     const u2 = subscribeToAttendance(currentUser.uid, todayStr, setAttendanceRecords);
-    return () => { u1(); u2(); };
+    const u3 = subscribeToTransactions(currentUser.uid, setTransactions);
+    const u4 = subscribeToRecentActivity(currentUser.uid, setRecentActivity);
+    return () => { u1(); u2(); u3(); u4(); };
   }, [currentUser, todayStr]);
 
   const today = new Date();
@@ -85,19 +96,17 @@ const Dashboard = () => {
     e.preventDefault();
     if (!checkInId.trim()) return;
     setCheckInLoading(true);
-    setCheckInMsg(''); setCheckInErr('');
     try {
       const match = members.find(m => m.shortId?.toUpperCase() === checkInId.trim().toUpperCase());
-      if (!match) { setCheckInErr('Member ID not found.'); return; }
+      if (!match) { toast.error('Member ID not found.'); return; }
       if (new Date(match.membershipEndDate) < today) {
-        setCheckInErr(`${match.memberName}'s membership expired. Cannot check in.`);
+        toast.error(`${match.memberName}'s membership expired.`);
         return;
       }
       await markAttendance(currentUser.uid, todayStr, match.memberId, match.memberName);
-      setCheckInMsg(`✓ Checked in: ${match.memberName}`);
+      toast.success(`Checked in: ${match.memberName}`);
       setCheckInId('');
-      setTimeout(() => setCheckInMsg(''), 4000);
-    } catch { setCheckInErr('Failed to mark check-in.'); }
+    } catch { toast.error('Failed to mark check-in.'); }
     finally { setCheckInLoading(false); }
   };
 
@@ -110,11 +119,21 @@ const Dashboard = () => {
         status: 'New Inquiry', source: 'Walk-in', notes: []
       });
       setWalkinName(''); setWalkinPhone('');
-      setWalkinSuccess(true);
-      setTimeout(() => setWalkinSuccess(false), 3000);
-    } catch { alert('Failed to register.'); }
+      toast.success('Prospect added to CRM successfully!');
+    } catch { toast.error('Failed to register.'); }
     finally { setWalkinLoading(false); }
   };
+
+  // Generate real revenue chart data (last 7 days)
+  const chartData = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dStr = d.toISOString().split('T')[0];
+    const dayRev = transactions
+      .filter(t => t.date === dStr || (t.createdAt && t.createdAt.startsWith(dStr)))
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    return { name: d.toLocaleDateString('en-US', { weekday: 'short' }), revenue: dayRev };
+  });
 
   const BADGE = {
     expired:  { cls: 'badge-red',    label: 'Expired' },
@@ -144,31 +163,46 @@ const Dashboard = () => {
 
       {/* KPI Stats Grid */}
       <div className="grid-4 mb-6" style={{ gap: '16px', marginBottom: '32px' }}>
-        {[
-          { label: 'Total Members', value: members.length, color: 'var(--primary-light)', icon: <Users size={20} />, sub: 'Active directory' },
-          { label: 'Expired', value: expiredMembers.length, color: 'var(--error)', icon: <AlertTriangle size={20} />, sub: 'Action required' },
-          { label: 'Expiring (7d)', value: expiringSoon.length, color: 'var(--gold)', icon: <Clock size={20} />, sub: 'Renewals due' },
-          { label: 'Checked In Today', value: attendanceRecords.length, color: 'var(--success)', icon: <CalendarCheck size={20} />, sub: 'Active attendance' },
-        ].map(s => (
-          <div key={s.label} className="stat-card" style={{ '--stat-color': s.color }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', marginBottom: '8px' }}>
-                  {s.label}
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="stat-card" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <div className="skeleton" style={{ width: '60%', height: '12px', marginBottom: '16px' }} />
+                  <div className="skeleton" style={{ width: '40%', height: '32px', marginBottom: '12px' }} />
+                  <div className="skeleton" style={{ width: '80%', height: '10px' }} />
                 </div>
-                <div style={{ fontSize: '32px', fontWeight: 800, color: '#fff', lineHeight: 1, fontFamily: 'var(--font-head)' }}>
-                  {s.value}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '6px', fontWeight: 500 }}>
-                  {s.sub}
-                </div>
-              </div>
-              <div style={{ color: s.color, background: `${s.color}15`, padding: '10px', borderRadius: '12px', border: `1px solid ${s.color}20` }}>
-                {s.icon}
+                <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          [
+            { label: 'Total Members', value: members.length, color: 'var(--primary-light)', icon: <Users size={20} />, sub: 'Active directory' },
+            { label: 'Expired', value: expiredMembers.length, color: 'var(--error)', icon: <AlertTriangle size={20} />, sub: 'Action required' },
+            { label: 'Expiring (7d)', value: expiringSoon.length, color: 'var(--gold)', icon: <Clock size={20} />, sub: 'Renewals due' },
+            { label: 'Checked In Today', value: attendanceRecords.length, color: 'var(--success)', icon: <CalendarCheck size={20} />, sub: 'Active attendance' },
+          ].map(s => (
+            <div key={s.label} className="stat-card" style={{ '--stat-color': s.color }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', marginBottom: '8px' }}>
+                    {s.label}
+                  </div>
+                  <div style={{ fontSize: '32px', fontWeight: 800, color: '#fff', lineHeight: 1, fontFamily: 'var(--font-head)' }}>
+                    {s.value}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '6px', fontWeight: 500 }}>
+                    {s.sub}
+                  </div>
+                </div>
+                <div style={{ color: s.color, background: `${s.color}15`, padding: '10px', borderRadius: '12px', border: `1px solid ${s.color}20` }}>
+                  {s.icon}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Dues Alert Banner */}
@@ -220,6 +254,61 @@ const Dashboard = () => {
           </button>
         </div>
       )}
+
+      {/* Analytics & Real Charts (Minimal) */}
+      <div className="grid-2 mb-6" style={{ gap: '32px', marginBottom: '32px' }}>
+        <div className="card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-head)' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(0, 212, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                <DollarSign size={16} />
+              </div>
+              Revenue Trend (7 Days)
+            </div>
+          </div>
+          <div style={{ height: '200px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--text-3)" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-3)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                <Tooltip 
+                  contentStyle={{ background: 'rgba(15, 12, 38, 0.9)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', backdropFilter: 'blur(10px)' }}
+                  itemStyle={{ color: 'var(--accent)', fontWeight: 700 }}
+                />
+                <Line type="monotone" dataKey="revenue" stroke="var(--accent)" strokeWidth={3} dot={{ fill: 'var(--accent)', r: 4, strokeWidth: 2, stroke: '#070514' }} activeDot={{ r: 6, fill: '#fff' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-head)' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(124, 92, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-light)' }}>
+                <ActivityIcon size={16} />
+              </div>
+              Recent Activity
+            </div>
+            <button onClick={() => navigate('/members')} className="btn btn-ghost" style={{ fontSize: '12px', padding: '4px 8px', height: 'auto' }}>View Log</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {recentActivity.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-3)', fontSize: '13px' }}>No recent activity to show.</div>
+            ) : recentActivity.slice(0, 4).map((act, i) => (
+              <div key={act.id || i} style={{ display: 'flex', gap: '14px', padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--border-2)' : 'none' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-hover)', color: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--border)' }}>
+                  {act.type === 'check_in' ? <CalendarCheck size={16} /> : act.type === 'payment' ? <DollarSign size={16} /> : <MessageCircle size={16} />}
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', color: '#fff', fontWeight: 600 }}>{act.title || act.description}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{new Date(act.timestamp || act.createdAt).toLocaleString()}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Two Column Section */}
       <div className="grid-2" style={{ gap: '32px', alignItems: 'start' }}>
@@ -341,27 +430,9 @@ const Dashboard = () => {
                   className="btn btn-primary"
                   style={{ height: '42px', padding: '0 18px', flexShrink: 0, borderRadius: 'var(--radius-sm)' }}
                 >
-                  {checkInLoading ? '...' : <><Zap size={14} /> Go</>}
+                  {checkInLoading ? <RefreshCw size={14} className="spin" /> : <><Zap size={14} /> Go</>}
                 </button>
               </form>
-              {checkInMsg && (
-                <div style={{
-                  color: 'var(--success)', fontSize: '13px', marginTop: '12px', fontWeight: 700,
-                  display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
-                  background: 'rgba(0, 230, 118, 0.06)', border: '1px solid rgba(0, 230, 118, 0.15)', borderRadius: '8px'
-                }}>
-                  {checkInMsg}
-                </div>
-              )}
-              {checkInErr && (
-                <div style={{
-                  color: 'var(--error)', fontSize: '13px', marginTop: '12px', fontWeight: 600,
-                  display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
-                  background: 'rgba(255, 94, 126, 0.06)', border: '1px solid rgba(255, 94, 126, 0.15)', borderRadius: '8px'
-                }}>
-                  ⚠️ {checkInErr}
-                </div>
-              )}
             </div>
 
             {/* Walk-in Lead */}
@@ -392,18 +463,9 @@ const Dashboard = () => {
                   style={{ fontSize: '13px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 >
                   <UserPlus size={14} style={{ color: 'var(--primary-light)' }} />
-                  {walkinLoading ? 'Registering...' : 'Register Walk-in'}
+                  {walkinLoading ? <RefreshCw size={14} className="spin" /> : 'Register Walk-in'}
                 </button>
               </form>
-              {walkinSuccess && (
-                <div style={{
-                  color: 'var(--success)', fontSize: '13px', marginTop: '12px', fontWeight: 700,
-                  display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
-                  background: 'rgba(0, 230, 118, 0.06)', border: '1px solid rgba(0, 230, 118, 0.15)', borderRadius: '8px'
-                }}>
-                  ✓ Prospect added to CRM successfully!
-                </div>
-              )}
             </div>
 
             {/* Quick Navigation Panel */}

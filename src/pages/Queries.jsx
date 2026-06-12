@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToQueries, updateQuery, deleteQuery } from '../services/firestoreService';
+import ConfirmModal from '../components/ConfirmModal';
+import toast from 'react-hot-toast';
 
 const STATUS_COLORS = {
   'Open':        { bg: 'rgba(239,68,68,0.12)',    border: 'rgba(239,68,68,0.3)',    text: '#ef4444' },
@@ -27,6 +29,7 @@ const Queries = () => {
   const [savingId, setSavingId] = useState(null);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [queryToDelete, setQueryToDelete] = useState(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -47,6 +50,7 @@ const Queries = () => {
     setSavingId(q.id);
     try {
       await updateQuery(currentUser.uid, q.id, { status: newStatus });
+      toast.success(`Status updated to ${newStatus}`);
     } finally {
       setSavingId(null);
     }
@@ -63,14 +67,22 @@ const Queries = () => {
       ];
       await updateQuery(currentUser.uid, q.id, { followUpNotes: updatedNotes });
       setNoteInputs(prev => ({ ...prev, [q.id]: '' }));
+      toast.success('Note added');
     } finally {
       setSavingId(null);
     }
   };
 
-  const handleDelete = async (q) => {
-    if (!window.confirm(`Delete query from ${q.memberName}? This is permanent.`)) return;
-    await deleteQuery(currentUser.uid, q.id);
+  const executeDelete = async () => {
+    if (!queryToDelete) return;
+    try {
+      await deleteQuery(currentUser.uid, queryToDelete.id);
+      toast.success('Query deleted');
+    } catch {
+      toast.error('Failed to delete query');
+    } finally {
+      setQueryToDelete(null);
+    }
   };
 
   const getWhatsAppReply = (q) => {
@@ -316,7 +328,7 @@ const Queries = () => {
                       <button
                         className="btn"
                         style={{ marginLeft: 'auto', background: 'var(--error-bg)', color: 'var(--error)', fontSize: '13px', padding: '9px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                        onClick={() => handleDelete(q)}
+                        onClick={() => setQueryToDelete(q)}
                       >
                         <Trash2 size={15} /> Delete
                       </button>
@@ -328,6 +340,16 @@ const Queries = () => {
           })}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!queryToDelete}
+        title="Delete Query"
+        message={`Are you sure you want to delete the query from ${queryToDelete?.memberName}? This cannot be undone.`}
+        confirmText="Delete"
+        isDestructive={true}
+        onConfirm={executeDelete}
+        onCancel={() => setQueryToDelete(null)}
+      />
     </div>
   );
 };
