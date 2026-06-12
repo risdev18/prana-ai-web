@@ -13,17 +13,51 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID"
 };
 
+// Safe local storage mock to prevent Firebase crashes in incognito/strict-privacy browsers
+try {
+  if (typeof window !== 'undefined') {
+    const test = window.localStorage;
+    test.getItem('test');
+  }
+} catch (e) {
+  console.warn("localStorage access denied. Mocking in memory to prevent crashes.");
+  const memStorage = {};
+  try {
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: (key) => memStorage[key] || null,
+        setItem: (key, val) => { memStorage[key] = val; },
+        removeItem: (key) => { delete memStorage[key]; },
+        clear: () => { for (let key in memStorage) delete memStorage[key]; },
+        get length() { return Object.keys(memStorage).length; },
+        key: (i) => Object.keys(memStorage)[i] || null,
+      },
+      writable: true,
+      configurable: true,
+      enumerable: true
+    });
+  } catch (err) {
+    console.warn("Could not redefine localStorage:", err);
+  }
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Enable offline persistence
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
-  } else if (err.code === 'unimplemented') {
-    console.warn('The current browser does not support all of the features required to enable persistence');
-  }
-});
+// Enable offline persistence safely
+try {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
+    } else if (err.code === 'unimplemented') {
+      console.warn('The current browser does not support all of the features required to enable persistence');
+    } else {
+      console.warn('Firebase persistence error:', err);
+    }
+  });
+} catch (err) {
+  console.warn('Could not enable persistence synchronously:', err);
+}
