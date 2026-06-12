@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Activity, Target, Dumbbell, Apple, Moon, Droplets, Zap, TrendingUp, User, Edit3, MessageCircle, X, Send } from 'lucide-react';
+import { ArrowLeft, Activity, Target, Dumbbell, Apple, Moon, Droplets, Zap, TrendingUp, User, Edit3, MessageCircle, X, Send, MessageSquare, CheckCircle } from 'lucide-react';
 import QRCode from 'react-qr-code';
-import { updateMember, saveAssessment } from '../services/firestoreService';
+import { updateMember, saveAssessment, addQuery } from '../services/firestoreService';
 import { generateAssessment } from '../core/calculator';
 
 // ─── 3D BODY MODEL ───────────────────────────────────────────────────────────
@@ -78,6 +78,38 @@ const MemberDashboard = () => {
   const [editGoal, setEditGoal] = useState(member.goal || 'Maintain Fitness');
   const [saveLoading, setSaveLoading] = useState(false);
   const [showCard, setShowCard] = useState(false);
+
+  // Query submission state
+  const [queryType, setQueryType] = useState('Query');
+  const [querySubject, setQuerySubject] = useState('');
+  const [queryMessage, setQueryMessage] = useState('');
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [querySuccess, setQuerySuccess] = useState(false);
+
+  const handleSubmitQuery = async (e) => {
+    e.preventDefault();
+    if (!querySubject.trim() || !queryMessage.trim()) return;
+    setQueryLoading(true);
+    try {
+      await addQuery(gym.gymId, {
+        memberName: member.memberName,
+        memberId: member.memberId,
+        memberPhone: member.phone || '',
+        type: queryType,
+        subject: querySubject.trim(),
+        message: queryMessage.trim(),
+      });
+      setQuerySubject('');
+      setQueryMessage('');
+      setQuerySuccess(true);
+      setTimeout(() => setQuerySuccess(false), 4000);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit. Please try again.');
+    } finally {
+      setQueryLoading(false);
+    }
+  };
 
   // Chatbot State
   const [chatOpen, setChatOpen] = useState(false);
@@ -541,56 +573,8 @@ const MemberDashboard = () => {
           </div>
         )}
 
-        {/* CONSISTENCY & STREAKS (Emotional Design) */}
-        <div style={{
-          background: 'var(--bg-card)', border: '1px solid var(--border)',
-          borderRadius: '20px', padding: '24px', marginBottom: '20px',
-          position: 'relative', overflow: 'hidden'
-        }} className="animate-fade-up-2">
-          {/* subtle background glow */}
-          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
-          
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', fontSize: '1.1rem' }}>
-            <TrendingUp size={20} color="var(--gold)" /> Monthly Consistency
-          </h3>
 
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Circular Progress Ring Mock */}
-            <div style={{ position: 'relative', width: '100px', height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
-                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--gold)" strokeWidth="3" strokeDasharray="65, 100" strokeLinecap="round" style={{ animation: 'progress 1.5s ease-out forwards' }} />
-              </svg>
-              <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-head)' }}>18</span>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-3)', textTransform: 'uppercase' }}>Days</span>
-              </div>
-            </div>
 
-            <div style={{ flex: 1, minWidth: '200px' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '4px' }}>You attended 18 days this month!</div>
-              <p style={{ color: 'var(--text-2)', fontSize: '0.9rem', marginBottom: '12px' }}>You are in the top 15% of members for consistency. Keep it up!</p>
-              
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', padding: '8px 12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>🔥</span>
-                  <div>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--gold)', lineHeight: 1 }}>5 Day</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Streak</div>
-                  </div>
-                </div>
-
-                <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>🏆</span>
-                  <div>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>12 Day</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Best Streak</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* BMI CARD */}
         <div style={{
@@ -766,6 +750,91 @@ const MemberDashboard = () => {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* QUERY / COMPLAINT SUBMISSION */}
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '16px', padding: '22px',
+          marginTop: '16px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(99,102,241,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <MessageSquare size={20} color="var(--primary-light)" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700 }}>Raise a Query or Complaint</div>
+              <div style={{ color: 'var(--text-2)', fontSize: '0.8rem' }}>Your gym team will respond on WhatsApp</div>
+            </div>
+          </div>
+
+          {querySuccess ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '16px', borderRadius: '12px',
+              background: 'rgba(6,214,160,0.1)', border: '1px solid rgba(6,214,160,0.25)'
+            }}>
+              <CheckCircle size={22} color="var(--accent)" />
+              <div>
+                <div style={{ fontWeight: 700, color: 'var(--accent)' }}>Query submitted!</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>Your gym team will follow up with you shortly.</div>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmitQuery}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                {['Query', 'Complaint', 'Feedback', 'Suggestion'].map(t => (
+                  <button
+                    key={t} type="button"
+                    onClick={() => setQueryType(t)}
+                    style={{
+                      padding: '6px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: 600,
+                      border: '1px solid',
+                      background: queryType === t ? 'var(--primary)' : 'transparent',
+                      borderColor: queryType === t ? 'var(--primary)' : 'rgba(255,255,255,0.15)',
+                      color: queryType === t ? '#fff' : 'var(--text-2)',
+                      cursor: 'pointer', transition: 'all 0.15s'
+                    }}
+                  >{t}</button>
+                ))}
+              </div>
+              <div className="form-group">
+                <label>Subject</label>
+                <input
+                  type="text" className="form-control"
+                  placeholder="e.g. Equipment broken, trainer issue..."
+                  value={querySubject}
+                  onChange={e => setQuerySubject(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label>Message</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  placeholder="Describe your query or complaint in detail..."
+                  value={queryMessage}
+                  onChange={e => setQueryMessage(e.target.value)}
+                  required
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary w-full"
+                disabled={queryLoading}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                {queryLoading ? 'Submitting...' : <><Send size={16} /> Submit {queryType}</>}
+              </button>
+            </form>
+          )}
         </div>
 
       </div>

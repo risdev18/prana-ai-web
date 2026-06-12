@@ -25,6 +25,7 @@ import Leads from './pages/Leads';
 import Trainers from './pages/Trainers';
 import Workouts from './pages/Workouts';
 import Onboarding from './pages/Onboarding';
+import Queries from './pages/Queries';
 
 import './App.css';
 
@@ -64,6 +65,7 @@ const AppRoutes = () => {
       <Route path="/trainers" element={<ProtectedRoute><Trainers /></ProtectedRoute>} />
       <Route path="/workouts" element={<ProtectedRoute><Workouts /></ProtectedRoute>} />
       <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+      <Route path="/queries" element={<ProtectedRoute><Queries /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" />} />

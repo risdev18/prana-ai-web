@@ -237,6 +237,41 @@ export const subscribeToRecentActivity = (gymId, callback, limitCount = 10) => {
   });
 };
 
+// ─── MEMBER QUERIES / COMPLAINTS ───
+
+export const addQuery = async (gymId, queryData) => {
+  const queryRef = doc(collection(db, 'Gyms', gymId, 'Queries'));
+  await setDoc(queryRef, {
+    ...queryData,
+    id: queryRef.id,
+    status: 'Open',
+    followUpNotes: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  return queryRef.id;
+};
+
+export const subscribeToQueries = (gymId, callback) => {
+  const q = query(
+    collection(db, 'Gyms', gymId, 'Queries'),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
+  });
+};
+
+export const updateQuery = async (gymId, queryId, data) => {
+  const queryRef = doc(db, 'Gyms', gymId, 'Queries', queryId);
+  await updateDoc(queryRef, { ...data, updatedAt: new Date().toISOString() });
+};
+
+export const deleteQuery = async (gymId, queryId) => {
+  const queryRef = doc(db, 'Gyms', gymId, 'Queries', queryId);
+  await deleteDoc(queryRef);
+};
+
 // ─── HELPER: GET MEMBER STATUS ───
 export const getMemberStatus = (endDateStr) => {
   if (!endDateStr) return 'Unknown';

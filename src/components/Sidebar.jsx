@@ -1,97 +1,202 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, CalendarCheck, RefreshCw, Dumbbell, Settings, LogOut, Zap, UserPlus, ClipboardList } from 'lucide-react';
+import {
+  LayoutDashboard, Users, CalendarCheck, RefreshCw, Dumbbell,
+  Settings, LogOut, Zap, UserPlus, ClipboardList, Activity,
+  MessageSquare, ChevronRight
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+
+const NavItem = ({ to, icon: Icon, label, badge }) => (
+  <NavLink
+    to={to}
+    style={({ isActive }) => ({
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '10px 14px',
+      borderRadius: 'var(--radius-md)',
+      color: isActive ? '#fff' : 'var(--text-2)',
+      background: isActive ? 'rgba(124, 92, 255, 0.12)' : 'transparent',
+      textDecoration: 'none',
+      fontWeight: isActive ? 600 : 500,
+      fontSize: '13.5px',
+      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      marginBottom: '2px',
+      borderLeft: isActive ? '3px solid var(--primary)' : '3px solid transparent',
+      boxShadow: isActive ? 'inset 0 1px 0 rgba(255, 255, 255, 0.05)' : 'none',
+    })}
+    onMouseEnter={e => {
+      if (!e.currentTarget.classList.contains('active')) {
+        e.currentTarget.style.background = 'var(--bg-hover)';
+        e.currentTarget.style.color = '#fff';
+      }
+    }}
+    onMouseLeave={e => {
+      if (!e.currentTarget.getAttribute('aria-current')) {
+        e.currentTarget.style.background = '';
+        e.currentTarget.style.color = '';
+      }
+    }}
+  >
+    <Icon size={16} style={{ flexShrink: 0, opacity: 0.95 }} />
+    <span style={{ flex: 1 }}>{label}</span>
+    {badge && (
+      <span style={{
+        background: 'linear-gradient(135deg, var(--error) 0%, #ff7b97 100%)',
+        color: '#fff',
+        fontSize: '10px',
+        fontWeight: 800,
+        padding: '2px 8px',
+        borderRadius: '999px',
+        minWidth: '18px',
+        textAlign: 'center',
+        boxShadow: '0 0 10px rgba(255, 94, 126, 0.25)',
+      }}>{badge}</span>
+    )}
+  </NavLink>
+);
+
+const NavSection = ({ label, children }) => (
+  <div style={{ marginBottom: '22px' }}>
+    <div style={{
+      fontSize: '10px',
+      fontWeight: 800,
+      textTransform: 'uppercase',
+      letterSpacing: '0.12em',
+      color: 'var(--text-3)',
+      padding: '0 14px',
+      marginBottom: '6px',
+    }}>
+      {label}
+    </div>
+    {children}
+  </div>
+);
 
 const Sidebar = () => {
   const { logout, gymData } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Failed to log out', error);
-    }
+    try { await logout(); navigate('/login'); }
+    catch (err) { console.error(err); }
   };
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Members', path: '/members', icon: Users },
-    { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
-    { name: 'Renewals', path: '/renewals', icon: RefreshCw },
-    { name: 'Leads', path: '/leads', icon: UserPlus },
-    { name: 'Trainers', path: '/trainers', icon: Dumbbell },
-    { name: 'Workouts', path: '/workouts', icon: ClipboardList },
-    { name: 'Settings', path: '/settings', icon: Settings },
-  ];
-
   return (
-    <div className="sidebar">
+    <div className="sidebar" style={{ background: 'rgba(7, 5, 20, 0.75)', borderRight: '1px solid var(--border)' }}>
       {/* Brand Header */}
       <div style={{
-        height: '72px',
+        height: '64px',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 24px',
+        padding: '0 18px',
         borderBottom: '1px solid var(--border)',
-        gap: '12px'
+        gap: '12px',
+        flexShrink: 0,
+        background: 'rgba(10, 8, 30, 0.2)',
       }}>
         <div style={{
-          width: '32px', height: '32px', borderRadius: '8px',
-          background: 'var(--primary)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
+          width: '32px', height: '32px', borderRadius: '10px',
+          background: 'linear-gradient(135deg, var(--primary) 0%, var(--blue-neon) 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          boxShadow: '0 0 16px rgba(124, 92, 255, 0.35)',
         }}>
-          <Zap size={18} color="#fff" />
+          <Zap size={16} color="#fff" />
         </div>
-        <div>
-          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)', letterSpacing: '0.02em' }}>
+        <div style={{ overflow: 'hidden' }}>
+          <div style={{
+            fontFamily: 'var(--font-head)',
+            fontWeight: 800,
+            fontSize: '14px',
+            letterSpacing: '0.08em',
+            color: '#fff',
+            textShadow: '0 0 10px rgba(124, 92, 255, 0.1)',
+          }}>
             PRANA AI
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
-            {gymData?.gymName || 'Gym Management'}
+          <div style={{
+            fontSize: '11px', color: 'var(--text-2)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            maxWidth: '170px',
+            fontWeight: 500,
+          }}>
+            {gymData?.gymName || 'Gym Operations'}
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav style={{ flex: 1, padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-        <div style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', paddingLeft: '8px' }}>
-          Menu
-        </div>
-        
-        {navItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-            style={({ isActive }) => ({
-              display: 'flex', alignItems: 'center', gap: '14px',
-              padding: '10px 16px',
-              borderRadius: 'var(--radius-md)',
-              color: isActive ? '#fff' : 'var(--text-2)',
-              background: isActive ? 'var(--primary)' : 'transparent',
-              textDecoration: 'none',
-              fontWeight: isActive ? 600 : 500,
-              fontSize: '14px',
-              transition: 'all 0.2s ease'
-            })}
-          >
-            <item.icon size={20} style={{ color: 'inherit' }} />
-            {item.name}
-          </NavLink>
-        ))}
+      {/* Navigation List */}
+      <nav style={{ flex: 1, padding: '20px 10px', overflowY: 'auto' }}>
+        <NavSection label="Operations">
+          <NavItem to="/dashboard"  icon={LayoutDashboard} label="Dashboard" />
+          <NavItem to="/members"    icon={Users}           label="Members" />
+          <NavItem to="/renewals"   icon={RefreshCw}       label="Renewals" />
+          <NavItem to="/attendance" icon={CalendarCheck}   label="Attendance" />
+          <NavItem to="/leads"      icon={UserPlus}        label="Leads" />
+          <NavItem to="/queries"    icon={MessageSquare}   label="Queries" />
+        </NavSection>
+
+        <NavSection label="Fitness Core">
+          <NavItem to="/workouts"    icon={ClipboardList} label="Workouts" />
+          <NavItem to="/assessments" icon={Activity}      label="Assessments" />
+        </NavSection>
+
+        <NavSection label="Management">
+          <NavItem to="/trainers" icon={Dumbbell} label="Trainers" />
+          <NavItem to="/settings" icon={Settings} label="Settings" />
+        </NavSection>
       </nav>
 
-      {/* User / Logout */}
-      <div style={{ padding: '16px', borderTop: '1px solid var(--border)' }}>
+      {/* Footer Mini Card */}
+      <div style={{ padding: '14px 10px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'rgba(10, 8, 30, 0.2)' }}>
+        {gymData?.ownerName && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '10px 12px', borderRadius: 'var(--radius-md)',
+            background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border)',
+            marginBottom: '8px',
+          }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--primary-dim) 0%, rgba(93, 169, 255, 0.05) 100%)',
+              color: 'var(--primary-light)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, fontSize: '13px', flexShrink: 0,
+              border: '1px solid rgba(124, 92, 255, 0.2)',
+            }}>
+              {gymData.ownerName[0]?.toUpperCase()}
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {gymData.ownerName}
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--text-3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Owner</div>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleLogout}
-          className="btn btn-ghost w-full justify-start"
-          style={{ color: 'var(--error)' }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            width: '100%', padding: '10px 12px', borderRadius: 'var(--radius-md)',
+            background: 'transparent', border: 'none',
+            color: 'var(--text-2)', fontSize: '13px', cursor: 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', fontFamily: 'var(--font)',
+            fontWeight: 600,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'var(--error-bg)';
+            e.currentTarget.style.color = 'var(--error)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-2)';
+          }}
         >
-          <LogOut size={18} />
+          <LogOut size={15} />
           Sign Out
         </button>
       </div>

@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Search, FileText, Trash2, UserPlus, Filter, KeyRound } from 'lucide-react';
+import { ChevronLeft, Search, FileText, Trash2, UserPlus, Filter, KeyRound, MessageCircle, DollarSign, Calendar, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToMembers, deleteMember, updateMember } from '../services/firestoreService';
 import { generateAssessment } from '../core/calculator';
+import MemberProfileModal from '../components/MemberProfileModal';
 
 const MemberList = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, gymData } = useAuth();
   const [members, setMembers] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [filterGoal, setFilterGoal] = useState('all');
+  const [selectedMember, setSelectedMember] = useState(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -23,14 +25,16 @@ const MemberList = () => {
     }
   }, [currentUser]);
 
-  const handleDelete = async (memberId) => {
+  const handleDelete = async (e, memberId) => {
+    e.stopPropagation();
     if (window.confirm('Delete this member? All data will be lost.')) {
       try { await deleteMember(currentUser.uid, memberId); }
       catch { alert('Error deleting member'); }
     }
   };
 
-  const handleResetPassword = async (member) => {
+  const handleResetPassword = async (e, member) => {
+    e.stopPropagation();
     if (window.confirm(`Reset password for ${member.memberName}? They will be prompted to create a new one on their next login.`)) {
       try {
         await updateMember(currentUser.uid, { ...member, password: '' });
@@ -41,7 +45,8 @@ const MemberList = () => {
     }
   };
 
-  const handleViewAssessment = (member) => {
+  const handleViewAssessment = (e, member) => {
+    e.stopPropagation();
     const assessment = generateAssessment(member);
     navigate('/assessment', { state: { assessment, isNew: false } });
   };
@@ -62,245 +67,347 @@ const MemberList = () => {
     return 'Obese';
   };
 
+  const getMemberStatus = (endDateStr) => {
+    if (!endDateStr) return 'Active';
+    const end = new Date(endDateStr);
+    const today = new Date();
+    const diff = (end - today) / (1000 * 60 * 60 * 24);
+    if (diff < 0) return 'Expired';
+    if (diff <= 5) return 'Expiring';
+    return 'Active';
+  };
+
+  const getWhatsAppReminderLink = (member) => {
+    const phone = member.phone?.replace(/\D/g, '');
+    if (!phone) return '#';
+    const cleanPhone = phone.length === 10 ? `91${phone}` : phone;
+    const balance = (member.membershipFee || 0) - (member.amountPaid || 0);
+    const gymName = gymData?.gymName || 'our gym';
+    const status = getMemberStatus(member.membershipEndDate);
+    
+    let text = `Hi ${member.memberName}, regarding your membership at ${gymName}:\n`;
+    if (status === 'Expired') {
+      text += `⚠️ Your membership has EXPIRED on ${new Date(member.membershipEndDate).toLocaleDateString()}.\n`;
+    } else {
+      text += `📅 Your membership is active until ${new Date(member.membershipEndDate).toLocaleDateString()}.\n`;
+    }
+    
+    if (balance > 0) {
+      text += `💸 Pending Balance: ₹${balance} is due.\n`;
+    }
+    text += `Please settle dues or renew to continue check-ins. Thank you!`;
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+  };
+
   const getInitials = (name) =>
     name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
 
   const goals = ['all', ...new Set(members.map(m => m.goal).filter(Boolean))];
 
   const filtered = members.filter(m => {
-    const matchSearch = m.memberName.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = m.memberName.toLowerCase().includes(search.toLowerCase()) || m.shortId?.toLowerCase().includes(search.toLowerCase());
     const matchGoal = filterGoal === 'all' || m.goal === filterGoal;
     return matchSearch && matchGoal;
   });
 
   return (
-    <div style={{ minHeight: '100vh', padding: '0 20px 40px', position: 'relative', overflow: 'hidden' }}>
-      {/* BG Image */}
+    <div style={{ minHeight: '100vh', padding: '0 20px 60px', position: 'relative', overflow: 'hidden' }}>
+      {/* Subtle background overlay */}
       <div style={{
          position: 'fixed', inset: 0,
          backgroundImage: 'url("https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2026&auto=format&fit=crop")',
          backgroundSize: 'cover',
          backgroundPosition: 'center',
-         opacity: 0.12,
-         filter: 'contrast(1.2) grayscale(0.2)',
+         opacity: 0.03,
+         filter: 'contrast(1.2) grayscale(0.8)',
          mixBlendMode: 'screen',
          pointerEvents: 'none', zIndex: 0
       }} />
 
-      <div style={{ maxWidth: '860px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '16px',
-          padding: '20px 0', marginBottom: '24px',
+          padding: '24px 0', marginBottom: '32px',
           borderBottom: '1px solid var(--border)'
         }}>
           <button
             onClick={() => navigate('/dashboard')}
             style={{
               width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+              background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text)', flexShrink: 0
+              cursor: 'pointer', color: 'var(--text)', flexShrink: 0,
+              transition: 'all 0.2s'
             }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={18} />
           </button>
           <div>
-            <h1 style={{ fontSize: '1.4rem', fontFamily: 'var(--font-head)', marginBottom: '2px' }}>
-              Members
+            <h1 style={{ fontSize: '1.6rem', fontFamily: 'var(--font-head)', fontWeight: 800, marginBottom: '4px' }}>
+              Members Hub
             </h1>
-            <p style={{ color: 'var(--text-2)', fontSize: '0.85rem' }}>
-              {members.length} total members
+            <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+              {members.length} registered members in your gym
             </p>
           </div>
           <button
             onClick={() => navigate('/add-member')}
+            className="btn btn-primary"
             style={{
               marginLeft: 'auto',
-              display: 'flex', alignItems: 'center', gap: '6px',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              border: 'none', color: '#fff', padding: '10px 18px',
-              borderRadius: '10px', cursor: 'pointer',
-              fontFamily: 'var(--font)', fontWeight: 600, fontSize: '0.9rem',
-              boxShadow: '0 4px 16px rgba(99,102,241,0.35)'
+              height: '40px',
+              padding: '0 18px',
+              borderRadius: 'var(--radius-sm)'
             }}
           >
-            <UserPlus size={16} /> Add Member
+            <UserPlus size={15} /> Add Member
           </button>
         </div>
 
         {/* Search + Filter */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-            <Search size={18} style={{
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+            <Search size={14} style={{
               position: 'absolute', left: '14px', top: '50%',
               transform: 'translateY(-50%)', color: 'var(--text-3)'
             }} />
             <input
               type="text" className="form-control"
-              placeholder="Search members..."
-              style={{ paddingLeft: '44px' }}
+              placeholder="Search by name or ID..."
+              style={{ paddingLeft: '38px', height: '42px', fontSize: '13.5px', background: 'rgba(10, 8, 30, 0.45)' }}
               value={search}
               onChange={e => setSearch(e.target.value)}
+              onFocusCapture={e => e.target.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border)'}
             />
           </div>
           <div style={{ position: 'relative' }}>
-            <Filter size={16} style={{
-              position: 'absolute', left: '12px', top: '50%',
+            <Filter size={14} style={{
+              position: 'absolute', left: '14px', top: '50%',
               transform: 'translateY(-50%)', color: 'var(--text-3)', zIndex: 1
             }} />
             <select
               className="form-control"
-              style={{ paddingLeft: '36px', width: 'auto', minWidth: '160px' }}
+              style={{ paddingLeft: '36px', width: 'auto', minWidth: '180px', height: '42px', fontSize: '13.5px', background: 'rgba(10, 8, 30, 0.45)' }}
               value={filterGoal}
               onChange={e => setFilterGoal(e.target.value)}
+              onFocusCapture={e => e.target.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border)'}
             >
               {goals.map(g => (
                 <option key={g} value={g}>
-                  {g === 'all' ? 'All Goals' : g}
+                  {g === 'all' ? 'All Fitness Goals' : g}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* List */}
+        {/* List Grid */}
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+          <div className="loader">
             <div className="spinner" />
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{
-            textAlign: 'center', padding: '60px 20px',
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px dashed var(--border)', borderRadius: '16px'
-          }}>
-            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>👥</div>
-            <h3 style={{ color: 'var(--text-2)', fontWeight: 500 }}>
+          <div className="empty-state" style={{ padding: '64px 24px' }}>
+            <Users size={40} color="var(--primary-light)" />
+            <h3 style={{ marginTop: '16px' }}>
               {search ? 'No members found' : 'No members yet'}
             </h3>
-            <p style={{ color: 'var(--text-3)', fontSize: '0.9rem', marginTop: '8px' }}>
-              {search ? 'Try a different search term' : 'Add your first member to get started'}
+            <p>
+              {search ? 'Try adjusting your search filters or queries.' : 'Register your first gym member to begin tracking operations.'}
             </p>
             {!search && (
               <button
                 onClick={() => navigate('/add-member')}
                 className="btn btn-primary"
-                style={{ marginTop: '20px', width: 'auto', padding: '12px 24px' }}
+                style={{ marginTop: '20px', height: '40px', padding: '0 20px', borderRadius: 'var(--radius-sm)' }}
               >
-                <UserPlus size={16} /> Add First Member
+                <UserPlus size={15} /> Add First Member
               </button>
             )}
           </div>
         ) : (
-          filtered.map(m => {
-            const bmiColor = getBmiColor(m.bmi);
-            const bmiPct = Math.min(((m.bmi || 20) / 40) * 100, 100);
-            return (
-              <div
-                key={m.id}
-                style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '14px',
-                  padding: '18px 20px',
-                  marginBottom: '10px',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)';
-                  e.currentTarget.style.background = 'rgba(99,102,241,0.05)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  {/* Avatar */}
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '50%', flexShrink: 0,
-                    background: `linear-gradient(135deg, ${bmiColor}, #6366f1)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 700, fontSize: '1rem', color: '#fff'
-                  }}>
-                    {getInitials(m.memberName)}
-                  </div>
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>{m.memberName}</h3>
-                      <span style={{
-                        background: 'rgba(99,102,241,0.12)', color: 'var(--primary-light)',
-                        border: '1px solid rgba(99,102,241,0.25)',
-                        padding: '2px 10px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 600
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {filtered.map(m => {
+              const bmiColor = getBmiColor(m.bmi);
+              const status = getMemberStatus(m.membershipEndDate);
+              const balance = (m.membershipFee || 0) - (m.amountPaid || 0);
+              
+              return (
+                <div
+                  key={m.id}
+                  onClick={() => setSelectedMember(m)}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '20px',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'rgba(124, 92, 255, 0.35)';
+                    e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.transform = 'none';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                    {/* Photo / Avatar */}
+                    {m.photoUrl ? (
+                      <img 
+                        src={m.photoUrl} 
+                        alt={m.memberName} 
+                        style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '48px', height: '48px', borderRadius: '50%', flexShrink: 0,
+                        background: `linear-gradient(135deg, ${bmiColor}25, rgba(124, 92, 255, 0.15))`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, color: bmiColor, fontSize: '15px',
+                        border: `1px solid ${bmiColor}40`
                       }}>
-                        {m.goal}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px', marginTop: '6px', flexWrap: 'wrap' }}>
-                      <span style={{ color: 'var(--text-2)', fontSize: '0.8rem' }}>
-                        BMI: <strong style={{ color: bmiColor }}>{m.bmi?.toFixed(1)}</strong>
-                        <span style={{ color: 'var(--text-3)', marginLeft: '4px' }}>({getBmiLabel(m.bmi)})</span>
-                      </span>
-                      {m.age && <span style={{ color: 'var(--text-2)', fontSize: '0.8rem' }}>Age: {m.age}</span>}
-                      {m.phone && <span style={{ color: 'var(--text-2)', fontSize: '0.8rem' }}>📞 {m.phone}</span>}
-                    </div>
-                    {/* BMI bar */}
-                    <div className="bmi-bar" style={{ marginTop: '8px', width: '200px', maxWidth: '100%' }}>
-                      <div className="bmi-fill" style={{ width: `${bmiPct}%`, background: bmiColor }} />
-                    </div>
-                  </div>
+                        {getInitials(m.memberName)}
+                      </div>
+                    )}
 
-                  {/* Actions */}
-                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                    {m.password && (
-                      <button
-                        onClick={() => handleResetPassword(m)}
-                        title="Reset Password"
+                    {/* Info */}
+                    <div style={{ flex: 2, minWidth: '200px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <h3 style={{ fontSize: '15.5px', fontWeight: 700, color: '#fff', margin: 0 }}>{m.memberName}</h3>
+                        <span className={`badge ${status === 'Expired' ? 'badge-red' : status === 'Expiring' ? 'badge-gold' : 'badge-green'}`} style={{ fontSize: '9px', padding: '2px 8px' }}>
+                          {status}
+                        </span>
+                      </div>
+                      
+                      <div style={{ fontSize: '12.5px', color: 'var(--text-3)', marginTop: '4px', fontWeight: 500 }}>
+                        ID: <span style={{ color: 'var(--primary-light)', fontWeight: 600 }}>{m.shortId}</span> &bull; 📞 {m.phone || 'No phone'}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '16px', marginTop: '10px', flexWrap: 'wrap', fontSize: '12px' }}>
+                        {m.bmi && (
+                          <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>
+                            BMI: <strong style={{ color: bmiColor }}>{m.bmi.toFixed(1)}</strong> ({getBmiLabel(m.bmi)})
+                          </span>
+                        )}
+                        {m.goal && (
+                          <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>
+                            Goal: <strong style={{ color: 'var(--accent-light)' }}>{m.goal}</strong>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Financials / Dues */}
+                    <div style={{ flex: 1.5, minWidth: '150px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Financial Status</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-2)', marginTop: '6px' }}>
+                        Membership: <strong>₹{m.membershipFee || 0}</strong>
+                      </div>
+                      <div style={{ fontSize: '13px', marginTop: '2px' }}>
+                        Dues: {balance > 0 ? (
+                          <span style={{ color: 'var(--error)', fontWeight: 700 }}>₹{balance.toLocaleString('en-IN')} pending</span>
+                        ) : (
+                          <span style={{ color: 'var(--success)', fontWeight: 700 }}>Paid ✓</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
+                      <a
+                        href={getWhatsAppReminderLink(m)}
+                        target="_blank" rel="noopener noreferrer"
+                        title="Send WhatsApp text"
                         style={{
-                          width: '38px', height: '38px', borderRadius: '9px',
-                          background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)',
+                          width: '36px', height: '36px', borderRadius: '8px',
+                          background: 'rgba(37, 211, 102, 0.08)', border: '1px solid rgba(37, 211, 102, 0.15)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          cursor: 'pointer', color: 'var(--gold)', transition: 'all 0.2s'
+                          color: '#25D366', transition: 'all 0.2s'
                         }}
                       >
-                        <KeyRound size={16} />
+                        <MessageCircle size={15} />
+                      </a>
+                      
+                      {m.password && (
+                        <button
+                          onClick={(e) => handleResetPassword(e, m)}
+                          title="Reset password credential"
+                          style={{
+                            width: '36px', height: '36px', borderRadius: '8px',
+                            background: 'rgba(255,160,0,0.08)', border: '1px solid rgba(255,160,0,0.15)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', color: 'var(--gold)', transition: 'all 0.2s'
+                          }}
+                        >
+                          <KeyRound size={14} />
+                        </button>
+                      )}
+
+                      <button
+                        onClick={(e) => handleViewAssessment(e, m)}
+                        title="View AI Fitness assessment"
+                        style={{
+                          width: '36px', height: '36px', borderRadius: '8px',
+                          background: 'rgba(124, 92, 255, 0.08)', border: '1px solid rgba(124, 92, 255, 0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer', color: 'var(--primary-light)', transition: 'all 0.2s'
+                        }}
+                      >
+                        <FileText size={14} />
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleViewAssessment(m)}
-                      title="View Assessment"
-                      style={{
-                        width: '38px', height: '38px', borderRadius: '9px',
-                        background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', color: 'var(--primary-light)', transition: 'all 0.2s'
-                      }}
-                    >
-                      <FileText size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(m.id)}
-                      title="Delete Member"
-                      style={{
-                        width: '38px', height: '38px', borderRadius: '9px',
-                        background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.2)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', color: 'var(--error)', transition: 'all 0.2s'
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+
+                      <button
+                        onClick={(e) => handleDelete(e, m.id)}
+                        title="Delete member profile"
+                        style={{
+                          width: '36px', height: '36px', borderRadius: '8px',
+                          background: 'rgba(255, 94, 126, 0.08)', border: '1px solid rgba(255, 94, 126, 0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer', color: 'var(--error)', transition: 'all 0.2s'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
                   </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
+
+      {/* Slide-over Profile Modal */}
+      {selectedMember && currentUser && (
+        <MemberProfileModal
+          member={selectedMember}
+          gymId={currentUser.uid}
+          onClose={() => setSelectedMember(null)}
+        />
+      )}
+    </div>
+      </div>
+
+      {/* Global Slide-over Modal triggered from List click */}
+      {selectedMember && currentUser && (
+        <MemberProfileModal
+          member={selectedMember}
+          gymId={currentUser.uid}
+          onClose={() => setSelectedMember(null)}
+        />
+      )}
     </div>
   );
 };

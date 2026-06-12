@@ -1,134 +1,452 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, AlertTriangle, CalendarCheck, UserPlus, CreditCard, Clock, Activity, FileText } from 'lucide-react';
+import {
+  AlertTriangle, Clock, CalendarCheck, UserPlus, CheckCircle,
+  MessageCircle, Scan, RefreshCw, Users, ArrowRight, Zap, TrendingDown
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { subscribeToMembers, subscribeToAttendance } from '../services/firestoreService';
+import { subscribeToMembers, subscribeToAttendance, markAttendance, addEnquiry } from '../services/firestoreService';
+import MemberProfileModal from '../components/MemberProfileModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  
+  const { currentUser, gymData } = useAuth();
+
   const [members, setMembers] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
-  
+  const [checkInId, setCheckInId] = useState('');
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkInMsg, setCheckInMsg] = useState('');
+  const [checkInErr, setCheckInErr] = useState('');
+  const [walkinName, setWalkinName] = useState('');
+  const [walkinPhone, setWalkinPhone] = useState('');
+  const [walkinLoading, setWalkinLoading] = useState(false);
+  const [walkinSuccess, setWalkinSuccess] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+
   const todayStr = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    if (currentUser) {
-      const unsubMembers = subscribeToMembers(currentUser.uid, setMembers);
-      const unsubAttendance = subscribeToAttendance(currentUser.uid, todayStr, setAttendanceRecords);
-      return () => {
-        unsubMembers();
-        unsubAttendance();
-      };
-    }
+    if (!currentUser) return;
+    const u1 = subscribeToMembers(currentUser.uid, setMembers);
+    const u2 = subscribeToAttendance(currentUser.uid, todayStr, setAttendanceRecords);
+    return () => { u1(); u2(); };
   }, [currentUser, todayStr]);
 
-  // Calculations
   const today = new Date();
-  const expiringSoonCount = members.filter(m => {
-    const end = new Date(m.membershipEndDate);
-    const diff = (end - today) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff <= 5;
-  }).length;
 
-  const pendingRenewalsCount = members.filter(m => m.paymentStatus === 'Pending' || new Date(m.membershipEndDate) < today).length;
-  
-  const inactiveMembers = members.filter(m => {
-    // Basic inactive check: just random logic for now if no attendance history is deep loaded
-    // In a real app we'd query attendance. We'll simulate 2 inactive members for demo of the alert.
-    return false; 
+  const expiredMembers = members.filter(m =>
+    m.membershipEndDate && new Date(m.membershipEndDate) < today
+  );
+
+  const expiringSoon = members.filter(m => {
+    if (!m.membershipEndDate) return false;
+    const diff = (new Date(m.membershipEndDate) - today) / 86400000;
+    return diff >= 0 && diff <= 7;
   });
-  
-  // Fake inactive alerts for MVP demonstration of the feature
-  const alerts = [
-    ...(pendingRenewalsCount > 0 ? [{ id: 1, type: 'warning', text: `${pendingRenewalsCount} memberships are pending renewal or payment.` }] : []),
-    ...(expiringSoonCount > 0 ? [{ id: 2, type: 'info', text: `${expiringSoonCount} members expiring in the next 5 days.` }] : []),
-    { id: 3, type: 'danger', text: 'Rohit hasn\'t attended for 7 days.' }
-  ];
 
-  const StatCard = ({ icon, label, value, color }) => (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ color: 'var(--text-3)', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-          <div style={{ fontSize: '32px', fontWeight: 800, marginTop: '8px', color: 'var(--text)' }}>{value}</div>
-        </div>
-        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: color }}>
-          {icon}
-        </div>
-      </div>
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', background: color }} />
-    </div>
+  const unpaidMembers = members.filter(m =>
+    (m.membershipFee || 0) - (m.amountPaid || 0) > 0
   );
 
-  const ActionButton = ({ icon, label, onClick, primary = false }) => (
-    <button 
-      onClick={onClick}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '20px', borderRadius: '16px', border: primary ? 'none' : '1px solid var(--border)',
-        background: primary ? 'var(--primary)' : 'var(--bg-card)',
-        color: primary ? '#fff' : 'var(--text)',
-        cursor: 'pointer', transition: 'all 0.2s', gap: '10px'
-      }}
-    >
-      {icon}
-      <span style={{ fontSize: '14px', fontWeight: 600 }}>{label}</span>
-    </button>
+  const totalDues = unpaidMembers.reduce((sum, m) =>
+    sum + ((m.membershipFee || 0) - (m.amountPaid || 0)), 0
   );
+
+  // Build priority queue (max 8 items)
+  const priorities = [];
+  expiredMembers.slice(0, 3).forEach(m => {
+    const bal = (m.membershipFee || 0) - (m.amountPaid || 0);
+    priorities.push({ type: 'expired', member: m, bal });
+  });
+  expiringSoon.slice(0, 3).forEach(m => {
+    const diff = Math.ceil((new Date(m.membershipEndDate) - today) / 86400000);
+    const bal = (m.membershipFee || 0) - (m.amountPaid || 0);
+    priorities.push({ type: 'expiring', member: m, bal, diff });
+  });
+  unpaidMembers.filter(m => !expiredMembers.includes(m)).slice(0, 2).forEach(m => {
+    const bal = (m.membershipFee || 0) - (m.amountPaid || 0);
+    priorities.push({ type: 'unpaid', member: m, bal });
+  });
+
+  const getWaLink = (p) => {
+    const phone = p.member.phone?.replace(/\D/g, '');
+    if (!phone) return '#';
+    const fp = phone.length === 10 ? `91${phone}` : phone;
+    const gym = gymData?.gymName || 'our gym';
+    let txt = `Hi ${p.member.memberName}, message from *${gym}* 🏋️\n\n`;
+    if (p.type === 'expired') txt += `⚠️ *Membership Expired*\nBalance due: ₹${p.bal}.\nPlease renew to continue.\n\nThank you!`;
+    else if (p.type === 'expiring') txt += `📅 *Expiring in ${p.diff} day${p.diff !== 1 ? 's' : ''}*\nRenew early to avoid interruption.\n${p.bal > 0 ? `Balance: ₹${p.bal}.` : ''}\n\nThank you!`;
+    else txt += `💸 *Pending Dues: ₹${p.bal}*\nKindly clear your outstanding balance.\n\nThank you!`;
+    return `https://wa.me/${fp}?text=${encodeURIComponent(txt)}`;
+  };
+
+  const handleCheckIn = async (e) => {
+    e.preventDefault();
+    if (!checkInId.trim()) return;
+    setCheckInLoading(true);
+    setCheckInMsg(''); setCheckInErr('');
+    try {
+      const match = members.find(m => m.shortId?.toUpperCase() === checkInId.trim().toUpperCase());
+      if (!match) { setCheckInErr('Member ID not found.'); return; }
+      if (new Date(match.membershipEndDate) < today) {
+        setCheckInErr(`${match.memberName}'s membership expired. Cannot check in.`);
+        return;
+      }
+      await markAttendance(currentUser.uid, todayStr, match.memberId, match.memberName);
+      setCheckInMsg(`✓ Checked in: ${match.memberName}`);
+      setCheckInId('');
+      setTimeout(() => setCheckInMsg(''), 4000);
+    } catch { setCheckInErr('Failed to mark check-in.'); }
+    finally { setCheckInLoading(false); }
+  };
+
+  const handleWalkin = async (e) => {
+    e.preventDefault();
+    setWalkinLoading(true);
+    try {
+      await addEnquiry(currentUser.uid, {
+        name: walkinName.trim(), phone: walkinPhone.trim(),
+        status: 'New Inquiry', source: 'Walk-in', notes: []
+      });
+      setWalkinName(''); setWalkinPhone('');
+      setWalkinSuccess(true);
+      setTimeout(() => setWalkinSuccess(false), 3000);
+    } catch { alert('Failed to register.'); }
+    finally { setWalkinLoading(false); }
+  };
+
+  const BADGE = {
+    expired:  { cls: 'badge-red',    label: 'Expired' },
+    expiring: { cls: 'badge-gold',   label: 'Expiring' },
+    unpaid:   { cls: 'badge-purple', label: 'Unpaid' },
+  };
 
   return (
     <div className="page" style={{ paddingBottom: '100px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h2>Dashboard</h2>
-        <p className="text-muted">Is your gym healthy today?</p>
+      {/* Page Header */}
+      <div className="page-header" style={{ marginBottom: '32px' }}>
+        <div className="page-header-left">
+          <h2 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-head)', fontWeight: 800 }}>Gym Desk</h2>
+          <p className="text-muted" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 8px var(--accent)', animation: 'pulse-soft 2s infinite' }} />
+            Operational dashboard &bull; {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(`/checkin/${currentUser?.uid}`)}
+          className="btn btn-outline"
+          style={{ height: '40px', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: 'var(--radius-sm)' }}
+        >
+          <Scan size={15} style={{ color: 'var(--accent)' }} /> QR Scanner
+        </button>
       </div>
 
-      {/* PRIORITY 1: Expiring, Pending, Attendance */}
-      <div className="grid-3 mb-6">
-        <StatCard icon={<AlertTriangle size={24} />} label="Expiring Soon" value={expiringSoonCount} color="var(--warning)" />
-        <StatCard icon={<Clock size={24} />} label="Pending Renewals" value={pendingRenewalsCount} color="var(--error)" />
-        <StatCard icon={<CalendarCheck size={24} />} label="Today's Attendance" value={attendanceRecords.length} color="var(--success)" />
-      </div>
-
-      {/* AUTOMATED ALERTS (Retention) */}
-      {alerts.length > 0 && (
-        <div className="mb-6">
-          <h3 style={{ fontSize: '15px', color: 'var(--text-2)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Action Required
-          </h3>
-          <div className="flex flex-col gap-2">
-            {alerts.map(alert => (
-              <div key={alert.id} style={{
-                padding: '16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px',
-                background: alert.type === 'danger' ? 'rgba(239,68,68,0.1)' : alert.type === 'warning' ? 'rgba(245,158,11,0.1)' : 'rgba(99,102,241,0.1)',
-                border: `1px solid ${alert.type === 'danger' ? 'rgba(239,68,68,0.2)' : alert.type === 'warning' ? 'rgba(245,158,11,0.2)' : 'rgba(99,102,241,0.2)'}`
-              }}>
-                <div style={{ color: alert.type === 'danger' ? 'var(--error)' : alert.type === 'warning' ? 'var(--warning)' : 'var(--primary)' }}>
-                  <AlertTriangle size={20} />
+      {/* KPI Stats Grid */}
+      <div className="grid-4 mb-6" style={{ gap: '16px', marginBottom: '32px' }}>
+        {[
+          { label: 'Total Members', value: members.length, color: 'var(--primary-light)', icon: <Users size={20} />, sub: 'Active directory' },
+          { label: 'Expired', value: expiredMembers.length, color: 'var(--error)', icon: <AlertTriangle size={20} />, sub: 'Action required' },
+          { label: 'Expiring (7d)', value: expiringSoon.length, color: 'var(--gold)', icon: <Clock size={20} />, sub: 'Renewals due' },
+          { label: 'Checked In Today', value: attendanceRecords.length, color: 'var(--success)', icon: <CalendarCheck size={20} />, sub: 'Active attendance' },
+        ].map(s => (
+          <div key={s.label} className="stat-card" style={{ '--stat-color': s.color }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', marginBottom: '8px' }}>
+                  {s.label}
                 </div>
-                <div style={{ flex: 1, fontSize: '14px', fontWeight: 500 }}>{alert.text}</div>
-                <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => navigate('/renewals')}>
-                  Take Action
-                </button>
+                <div style={{ fontSize: '32px', fontWeight: 800, color: '#fff', lineHeight: 1, fontFamily: 'var(--font-head)' }}>
+                  {s.value}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '6px', fontWeight: 500 }}>
+                  {s.sub}
+                </div>
+              </div>
+              <div style={{ color: s.color, background: `${s.color}15`, padding: '10px', borderRadius: '12px', border: `1px solid ${s.color}20` }}>
+                {s.icon}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Dues Alert Banner */}
+      {totalDues > 0 && (
+        <div style={{
+          background: 'rgba(255, 94, 126, 0.06)',
+          border: '1px solid rgba(255, 94, 126, 0.15)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '32px',
+          gap: '16px',
+          flexWrap: 'wrap',
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 8px 32px 0 rgba(0,0,0,0.15)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '50%',
+              background: 'var(--error-bg)', border: '1px solid var(--error-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--error)'
+            }}>
+              <TrendingDown size={18} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, color: 'var(--error)', fontSize: '15px', fontFamily: 'var(--font-head)' }}>
+                ₹{totalDues.toLocaleString('en-IN')} Outstanding Dues
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-2)', marginTop: '2px' }}>
+                {unpaidMembers.length} member{unpaidMembers.length !== 1 ? 's' : ''} with pending payments to collect
+              </div>
+            </div>
+          </div>
+          <button
+            className="btn"
+            onClick={() => navigate('/renewals')}
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 94, 126, 0.2) 0%, rgba(255, 94, 126, 0.1) 100%)',
+              border: '1px solid rgba(255, 94, 126, 0.3)',
+              color: '#fff',
+              fontSize: '13px',
+              height: '38px',
+              padding: '0 16px',
+            }}
+          >
+            <RefreshCw size={14} className="spin" style={{ marginRight: '6px' }} /> Manage Dues
+          </button>
+        </div>
+      )}
+
+      {/* Two Column Section */}
+      <div className="grid-2" style={{ gap: '32px', alignItems: 'start' }}>
+
+        {/* Column 1: Action Queue */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div className="section-label" style={{ margin: 0 }}>Today's Action Queue</div>
+            {priorities.length > 0 && (
+              <button onClick={() => navigate('/renewals')} className="btn btn-ghost" style={{ fontSize: '12px', padding: '4px 8px', height: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                View All <ArrowRight size={13} />
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {priorities.length === 0 ? (
+              <div className="empty-state" style={{ padding: '48px 24px' }}>
+                <CheckCircle size={36} color="var(--success)" />
+                <h3 style={{ marginTop: '14px' }}>All caught up!</h3>
+                <p>No expired memberships or unpaid dues today.</p>
+              </div>
+            ) : priorities.map((p, i) => (
+              <div
+                key={i}
+                className="priority-item"
+                style={{
+                  cursor: 'pointer',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '18px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+                onClick={() => setSelectedMember(p.member)}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'rgba(124, 92, 255, 0.35)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                  e.currentTarget.style.transform = 'none';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className={`badge ${BADGE[p.type].cls}`}>{BADGE[p.type].label}</span>
+                    <span style={{ fontWeight: 700, fontSize: '14.5px', color: '#fff' }}>{p.member.memberName}</span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 700, background: 'rgba(255,255,255,0.03)', padding: '2px 8px', borderRadius: '6px' }}>{p.member.shortId}</span>
+                </div>
+
+                <div style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: 1.4 }}>
+                  {p.type === 'expired' && <>Membership expired &bull; Collection amount <strong style={{ color: 'var(--error)' }}>₹{p.bal}</strong></>}
+                  {p.type === 'expiring' && <>Expires in <strong>{p.diff} day{p.diff !== 1 ? 's' : ''}</strong> &bull; {p.bal > 0 ? <>Outstanding <strong style={{ color: 'var(--gold)' }}>₹{p.bal}</strong></> : 'Paid'}</>}
+                  {p.type === 'unpaid' && <>Outstanding pending dues: <strong style={{ color: 'var(--error)' }}>₹{p.bal}</strong></>}
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }} onClick={e => e.stopPropagation()}>
+                  <a
+                    href={getWaLink(p)} target="_blank" rel="noopener noreferrer"
+                    className="btn"
+                    style={{
+                      background: '#128C7E',
+                      color: '#fff',
+                      fontSize: '12px',
+                      height: '34px',
+                      padding: '0 14px',
+                      borderRadius: 'var(--radius-sm)',
+                      boxShadow: '0 2px 8px rgba(18, 140, 126, 0.2)'
+                    }}
+                    onClick={e => { if (!p.member.phone) { e.preventDefault(); alert('No phone number on profile.'); } }}
+                  >
+                    <MessageCircle size={13} /> WhatsApp
+                  </a>
+                  <button
+                    className="btn btn-outline"
+                    style={{ fontSize: '12px', height: '34px', padding: '0 14px', borderRadius: 'var(--radius-sm)' }}
+                    onClick={() => navigate('/renewals')}
+                  >
+                    Collect / Renew
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </div>
-      )}
 
-      {/* PRIORITY 2: Quick Actions */}
-      <h3 style={{ fontSize: '15px', color: 'var(--text-2)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-        Quick Actions
-      </h3>
-      <div className="grid-4 mb-6">
-        <ActionButton primary icon={<UserPlus size={24} />} label="Add Member" onClick={() => navigate('/add-member')} />
-        <ActionButton icon={<CreditCard size={24} />} label="Mark Payment" onClick={() => navigate('/renewals')} />
-        <ActionButton icon={<CalendarCheck size={24} />} label="Mark Attendance" onClick={() => navigate('/attendance')} />
-        <ActionButton icon={<Users size={24} />} label="View Leads" onClick={() => navigate('/leads')} />
+        {/* Column 2: Reception Panel */}
+        <div>
+          <div className="section-label" style={{ marginBottom: '16px' }}>Reception Desk</div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {/* Quick Check-in */}
+            <div className="card" style={{ padding: '24px', background: 'rgba(15, 12, 38, 0.45)' }}>
+              <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-head)' }}>
+                <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 6px var(--accent)' }} />
+                Quick Check-In
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-3)', marginTop: '4px', marginBottom: '16px' }}>Enter member ID to log attendance instantly</div>
+              
+              <form onSubmit={handleCheckIn} style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text" className="form-control"
+                  placeholder="Member ID (e.g. GYM-001)"
+                  value={checkInId}
+                  onChange={e => setCheckInId(e.target.value)}
+                  style={{ flex: 1, fontSize: '13.5px', height: '42px' }}
+                />
+                <button
+                  type="submit"
+                  disabled={checkInLoading}
+                  className="btn btn-primary"
+                  style={{ height: '42px', padding: '0 18px', flexShrink: 0, borderRadius: 'var(--radius-sm)' }}
+                >
+                  {checkInLoading ? '...' : <><Zap size={14} /> Go</>}
+                </button>
+              </form>
+              {checkInMsg && (
+                <div style={{
+                  color: 'var(--success)', fontSize: '13px', marginTop: '12px', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
+                  background: 'rgba(0, 230, 118, 0.06)', border: '1px solid rgba(0, 230, 118, 0.15)', borderRadius: '8px'
+                }}>
+                  {checkInMsg}
+                </div>
+              )}
+              {checkInErr && (
+                <div style={{
+                  color: 'var(--error)', fontSize: '13px', marginTop: '12px', fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
+                  background: 'rgba(255, 94, 126, 0.06)', border: '1px solid rgba(255, 94, 126, 0.15)', borderRadius: '8px'
+                }}>
+                  ⚠️ {checkInErr}
+                </div>
+              )}
+            </div>
+
+            {/* Walk-in Lead */}
+            <div className="card" style={{ padding: '24px', background: 'rgba(15, 12, 38, 0.45)' }}>
+              <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-head)' }}>
+                <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', boxShadow: '0 0 6px var(--primary)' }} />
+                Instant Walk-in
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-3)', marginTop: '4px', marginBottom: '16px' }}>Capture new prospect enquiry details</div>
+              
+              <form onSubmit={handleWalkin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input
+                  type="text" className="form-control"
+                  placeholder="Enquirer Name" required
+                  value={walkinName} onChange={e => setWalkinName(e.target.value)}
+                  style={{ fontSize: '13px', height: '40px' }}
+                />
+                <input
+                  type="tel" className="form-control"
+                  placeholder="Phone number" required
+                  value={walkinPhone} onChange={e => setWalkinPhone(e.target.value)}
+                  style={{ fontSize: '13px', height: '40px' }}
+                />
+                <button
+                  type="submit"
+                  disabled={walkinLoading}
+                  className="btn btn-outline w-full"
+                  style={{ fontSize: '13px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <UserPlus size={14} style={{ color: 'var(--primary-light)' }} />
+                  {walkinLoading ? 'Registering...' : 'Register Walk-in'}
+                </button>
+              </form>
+              {walkinSuccess && (
+                <div style={{
+                  color: 'var(--success)', fontSize: '13px', marginTop: '12px', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
+                  background: 'rgba(0, 230, 118, 0.06)', border: '1px solid rgba(0, 230, 118, 0.15)', borderRadius: '8px'
+                }}>
+                  ✓ Prospect added to CRM successfully!
+                </div>
+              )}
+            </div>
+
+            {/* Quick Navigation Panel */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {[
+                { label: 'Add Member', icon: <UserPlus size={18} />, path: '/add-member', color: 'var(--primary-light)', bg: 'rgba(124, 92, 255, 0.08)' },
+                { label: 'Attendance', icon: <CalendarCheck size={18} />, path: '/attendance', color: 'var(--success)', bg: 'rgba(0, 230, 118, 0.08)' },
+                { label: 'Renewals', icon: <RefreshCw size={18} />, path: '/renewals', color: 'var(--gold)', bg: 'rgba(255, 208, 67, 0.08)' },
+                { label: 'All Members', icon: <Users size={18} />, path: '/members', color: 'var(--accent)', bg: 'rgba(0, 212, 255, 0.08)' },
+              ].map(a => (
+                <button
+                  key={a.label}
+                  className="quick-action-btn"
+                  onClick={() => navigate(a.path)}
+                  style={{
+                    background: a.bg,
+                    borderColor: 'var(--border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '16px 12px',
+                    borderRadius: 'var(--radius-lg)',
+                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
+                >
+                  <div style={{ color: a.color }}>{a.icon}</div>
+                  <span style={{ fontSize: '11.5px', color: 'var(--text)', fontWeight: 600 }}>{a.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Global Member Profile Modal */}
+      {selectedMember && currentUser && (
+        <MemberProfileModal
+          member={selectedMember}
+          gymId={currentUser.uid}
+          onClose={() => setSelectedMember(null)}
+        />
+      )}
     </div>
   );
 };
