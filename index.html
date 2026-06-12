@@ -7,6 +7,19 @@
     <title>prana-ai-web</title>
   </head>
   <body>
+    <div id="error-overlay" style="display: none; padding: 20px; color: red; background: black; z-index: 9999; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow: auto;"></div>
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        var overlay = document.getElementById('error-overlay');
+        overlay.style.display = 'block';
+        overlay.innerHTML += '<p>Error: ' + message + '<br>Source: ' + source + ':' + lineno + ':' + colno + '<br>' + (error && error.stack ? error.stack : '') + '</p>';
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        var overlay = document.getElementById('error-overlay');
+        overlay.style.display = 'block';
+        overlay.innerHTML += '<p>Unhandled Promise Rejection: ' + event.reason + '</p>';
+      });
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
