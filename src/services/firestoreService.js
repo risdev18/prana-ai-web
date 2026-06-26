@@ -1,6 +1,6 @@
 import {
   collection, doc, setDoc, updateDoc, deleteDoc,
-  getDocs, getDoc, query, orderBy, onSnapshot, where
+  getDocs, getDoc, query, orderBy, onSnapshot, where, writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -28,12 +28,45 @@ export const updateGymLocation = async (gymId, { gymLat, gymLng, allowedRadius }
   });
 };
 
+export const updateGymProfile = async (gymId, data) => {
+  const gymRef = doc(db, 'Gyms', gymId);
+  await updateDoc(gymRef, data);
+};
+
 // ─── MEMBER MANAGEMENT ───
 
 export const addMember = async (gymId, member) => {
   const memberRef = doc(db, 'Gyms', gymId, 'Members', member.memberId);
   await setDoc(memberRef, member);
 };
+
+export const addMembersBatch = async (gymId, membersArray) => {
+  const batch = writeBatch(db);
+  membersArray.forEach(member => {
+    const memberRef = doc(db, 'Gyms', gymId, 'Members', member.memberId);
+    batch.set(memberRef, member);
+  });
+  await batch.commit();
+};
+
+export const deleteAllMembers = async (gymId) => {
+  const membersRef = collection(db, 'Gyms', gymId, 'Members');
+  const snapshot = await getDocs(membersRef);
+  // Firestore batch limit is 500 — chunk if needed
+  const chunks = [];
+  let current = [];
+  snapshot.docs.forEach((d, i) => {
+    current.push(d);
+    if (current.length === 490) { chunks.push(current); current = []; }
+  });
+  if (current.length > 0) chunks.push(current);
+  for (const chunk of chunks) {
+    const batch = writeBatch(db);
+    chunk.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+};
+
 
 export const updateMember = async (gymId, member) => {
   const memberRef = doc(db, 'Gyms', gymId, 'Members', member.memberId);

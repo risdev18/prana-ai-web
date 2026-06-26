@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Save, Bell, MessageCircle, Users, Shield, Zap, LogOut, CheckCircle, Building2 } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Bell, MessageCircle, Users, Shield, Zap, LogOut, CheckCircle, Building2, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import { updateGymProfile, deleteAllMembers } from '../services/firestoreService';
+
 
 const ToggleSwitch = ({ value, onChange }) => (
   <button
@@ -66,13 +68,20 @@ const ToggleRow = ({ label, desc, value, onChange, last = false }) => (
 );
 
 const Settings = () => {
-  const { gymData, logout } = useAuth();
+  const { gymData, logout, refreshGymData } = useAuth();
+
   const navigate = useNavigate();
 
   const [gymName, setGymName] = useState(gymData?.gymName || '');
   const [ownerName, setOwnerName] = useState(gymData?.ownerName || '');
   const [phone, setPhone] = useState(gymData?.phone || '');
+  const [address, setAddress] = useState(gymData?.address || '');
+  const [logoUrl, setLogoUrl] = useState(gymData?.logoUrl || '');
+  const [signatureUrl, setSignatureUrl] = useState(gymData?.signatureUrl || '');
+  const [isSaving, setIsSaving] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [notifications, setNotifications] = useState({
     renewalAlerts: true,
@@ -91,14 +100,60 @@ const Settings = () => {
     setter(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSave = () => {
-    // Save to firestore logic can be added here
-    toast.success('Settings saved successfully!');
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await updateGymProfile(gymData.gymId, {
+        gymName,
+        ownerName,
+        phone,
+        address,
+        logoUrl,
+        signatureUrl
+      });
+      await refreshGymData(); // Refresh context so receipt shows new data immediately
+      toast.success('Settings saved successfully!');
+
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const executeLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const executeDeleteAllMembers = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteAllMembers(gymData.gymId);
+      toast.success('All member data has been cleared successfully!');
+      setIsDeleteAllModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete members. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleImageUpload = (e, setter) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 500000) { // Limit to 500KB to prevent Firestore doc limits
+        toast.error('Image is too large. Please use an image under 500KB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -122,16 +177,18 @@ const Settings = () => {
           </div>
           <button
             onClick={handleSave}
+            disabled={isSaving}
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
               padding: '10px 20px', borderRadius: '12px', border: 'none',
               background: 'linear-gradient(135deg, #7C5CFF, #5DA9FF)',
               color: '#fff', fontFamily: 'var(--font)', fontWeight: 700, fontSize: '14px',
-              cursor: 'pointer', transition: 'all 0.3s ease',
-              boxShadow: '0 4px 16px rgba(124,92,255,0.35)'
+              cursor: isSaving ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease',
+              boxShadow: '0 4px 16px rgba(124,92,255,0.35)',
+              opacity: isSaving ? 0.7 : 1
             }}
           >
-            <Save size={16} /> Save Changes
+            <Save size={16} /> {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -148,9 +205,35 @@ const Settings = () => {
               <label>Owner Name</label>
               <input type="text" className="form-control" value={ownerName} onChange={e => setOwnerName(e.target.value)} />
             </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
+            <div className="form-group">
               <label>Contact Phone</label>
               <input type="tel" className="form-control" value={phone} onChange={e => setPhone(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Gym Address</label>
+              <textarea className="form-control" rows="2" value={address} onChange={e => setAddress(e.target.value)} placeholder="Full gym address for receipts..." />
+            </div>
+            
+            <div className="form-group" style={{ marginTop: '14px' }}>
+              <label>Gym Logo (For Receipts)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {logoUrl ? <img src={logoUrl} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <span style={{ fontSize: '10px', color: 'var(--text-3)' }}>No Logo</span>}
+                </div>
+                <input type="file" accept="image/*" onChange={e => handleImageUpload(e, setLogoUrl)} style={{ fontSize: '12px' }} />
+                {logoUrl && <button type="button" className="btn btn-ghost" style={{ padding: '4px', color: 'var(--error)' }} onClick={() => setLogoUrl('')}><X size={16} /></button>}
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Authorised Signature (For Receipts)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+                <div style={{ width: '120px', height: '60px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {signatureUrl ? <img src={signatureUrl} alt="Signature" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <span style={{ fontSize: '10px', color: 'var(--text-3)' }}>No Signature</span>}
+                </div>
+                <input type="file" accept="image/*" onChange={e => handleImageUpload(e, setSignatureUrl)} style={{ fontSize: '12px' }} />
+                {signatureUrl && <button type="button" className="btn btn-ghost" style={{ padding: '4px', color: 'var(--error)' }} onClick={() => setSignatureUrl('')}><X size={16} /></button>}
+              </div>
             </div>
           </SettingsSection>
 
@@ -181,6 +264,20 @@ const Settings = () => {
             <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--error)', marginBottom: '12px' }}>
               Danger Zone
             </div>
+            <button
+              onClick={() => setIsDeleteAllModalOpen(true)}
+              style={{
+                width: '100%', padding: '12px', borderRadius: '10px', marginBottom: '10px',
+                background: 'rgba(255,94,126,0.08)', border: '1px solid rgba(255,94,126,0.25)',
+                color: 'var(--error)', fontFamily: 'var(--font)', fontWeight: 700, fontSize: '14px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,94,126,0.18)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,94,126,0.08)'}
+            >
+              🗑️ Delete ALL Members (Reset App)
+            </button>
             <button
               onClick={() => setIsLogoutModalOpen(true)}
               style={{
@@ -288,6 +385,16 @@ const Settings = () => {
         isDestructive={true}
         onConfirm={executeLogout}
         onCancel={() => setIsLogoutModalOpen(false)}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteAllModalOpen}
+        title="⚠️ Delete ALL Members?"
+        message={`This will permanently delete every single member from your gym database. This action CANNOT be undone. Are you absolutely sure?`}
+        confirmText={isDeleting ? 'Deleting...' : 'Yes, Delete Everything'}
+        isDestructive={true}
+        onConfirm={executeDeleteAllMembers}
+        onCancel={() => setIsDeleteAllModalOpen(false)}
       />
     </div>
   );

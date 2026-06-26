@@ -54,11 +54,24 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  const refreshGymData = async () => {
+    if (currentUser) {
+      try {
+        const data = await getGymData(currentUser.uid);
+        setGymData(data);
+      } catch (err) {
+        console.error('Failed to refresh gym data:', err);
+      }
+    }
+  };
+
   const value = {
     currentUser,
     gymData,
     logout: logoutGym,
+    refreshGymData,
   };
+
 
   return (
     <AuthContext.Provider value={value}>

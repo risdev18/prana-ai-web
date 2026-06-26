@@ -8,6 +8,7 @@ import { GENDERS, ACTIVITY_LEVELS, GOALS } from '../core/constants';
 import { generateAssessment } from '../core/calculator';
 import QRCode from 'react-qr-code';
 import toast from 'react-hot-toast';
+import ReceiptModal from '../components/ReceiptModal';
 
 const GOAL_ICONS = {
   'Cut': '🔥',
@@ -55,6 +56,7 @@ const AddMember = () => {
   const [error, setError] = useState('');
   const [successMember, setSuccessMember] = useState(null);
   const [attendanceCheckedIn, setAttendanceCheckedIn] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -265,10 +267,18 @@ const AddMember = () => {
             >
               <Sparkles size={18} /> AI Onboarding
             </button>
+
+            <button 
+              onClick={() => setIsReceiptOpen(true)}
+              className="btn btn-outline"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: 'var(--primary-light)', color: '#fff', border: 'none', gridColumn: 'span 2' }}
+            >
+              <Clipboard size={18} /> View & Share Receipt
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn btn-outline flex-1" onClick={() => { setSuccessMember(null); setAttendanceCheckedIn(false); setFormData(prev => ({ ...prev, memberName: '', phone: '', photoUrl: '' })); }}>
+            <button className="btn btn-outline flex-1" onClick={() => { setSuccessMember(null); setAttendanceCheckedIn(false); setFormData(prev => ({ ...prev, memberName: '', phone: '', photoUrl: '' })); setIsReceiptOpen(false); }}>
               Add Another Member
             </button>
             <button className="btn btn-primary flex-1" onClick={() => navigate('/members')}>
@@ -276,6 +286,12 @@ const AddMember = () => {
             </button>
           </div>
 
+          <ReceiptModal 
+            isOpen={isReceiptOpen} 
+            onClose={() => setIsReceiptOpen(false)} 
+            member={successMember} 
+            gymData={gymData} 
+          />
         </div>
       </div>
     );

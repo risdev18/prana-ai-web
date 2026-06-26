@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Search, FileText, Trash2, UserPlus, Filter, KeyRound, MessageCircle, DollarSign, Calendar, Activity } from 'lucide-react';
+import { ChevronLeft, Search, FileText, Trash2, UserPlus, Filter, KeyRound, MessageCircle, DollarSign, Calendar, Activity, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToMembers, deleteMember, updateMember } from '../services/firestoreService';
 import { generateAssessment } from '../core/calculator';
 import MemberProfileModal from '../components/MemberProfileModal';
+import ImportMembersModal from '../components/ImportMembersModal';
+import { Upload } from 'lucide-react';
+
 
 const MemberList = () => {
   const navigate = useNavigate();
@@ -14,6 +17,7 @@ const MemberList = () => {
   const [loading, setLoading] = useState(true);
   const [filterGoal, setFilterGoal] = useState('all');
   const [selectedMember, setSelectedMember] = useState(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -154,19 +158,32 @@ const MemberList = () => {
               {members.length} registered members in your gym
             </p>
           </div>
-          <button
-            onClick={() => navigate('/add-member')}
-            className="btn btn-primary"
-            style={{
-              marginLeft: 'auto',
-              height: '40px',
-              padding: '0 18px',
-              borderRadius: 'var(--radius-sm)'
-            }}
-          >
-            <UserPlus size={15} /> Add Member
-          </button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="btn btn-outline"
+              style={{
+                height: '40px',
+                padding: '0 16px',
+                borderRadius: 'var(--radius-sm)'
+              }}
+            >
+              <Upload size={15} /> Import Excel
+            </button>
+            <button
+              onClick={() => navigate('/add-member')}
+              className="btn btn-primary"
+              style={{
+                height: '40px',
+                padding: '0 18px',
+                borderRadius: 'var(--radius-sm)'
+              }}
+            >
+              <UserPlus size={15} /> Add Member
+            </button>
+          </div>
         </div>
+
 
         {/* Search + Filter */}
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
@@ -397,19 +414,17 @@ const MemberList = () => {
           onClose={() => setSelectedMember(null)}
         />
       )}
-    </div>
-      </div>
 
-      {/* Global Slide-over Modal triggered from List click */}
-      {selectedMember && currentUser && (
-        <MemberProfileModal
-          member={selectedMember}
-          gymId={currentUser.uid}
-          onClose={() => setSelectedMember(null)}
-        />
-      )}
+      {/* Import Modal */}
+      <ImportMembersModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        gymId={currentUser?.uid}
+      />
     </div>
   );
 };
+
+
 
 export default MemberList;

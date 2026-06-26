@@ -32,7 +32,8 @@ const Renewals = () => {
   const getWhatsAppLink = (member) => {
     const phone = member.phone?.replace(/\D/g, '');
     if (!phone) return '#';
-    const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+    let cleanedPhone = phone.startsWith('0') ? phone.slice(1) : phone;
+    const formattedPhone = cleanedPhone.length === 10 ? `91${cleanedPhone}` : cleanedPhone;
     const gymName = gymData?.gymName || 'our gym';
     const balance = (member.membershipFee || 0) - (member.amountPaid || 0);
     let text = `Hi ${member.memberName} 👋\n\n`;
@@ -53,7 +54,23 @@ const Renewals = () => {
 
     text += `Thank you,\nTeam ${gymName}`;
 
-    return `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`;
+  };
+
+  const handleSendAll = () => {
+    const validMembers = uniqueRenewals.filter(m => m.phone && m.phone.replace(/\D/g, '').length >= 10);
+    if (validMembers.length === 0) {
+      toast.error('No members with valid phone numbers.');
+      return;
+    }
+    if (!window.confirm(`This will attempt to open WhatsApp for ${validMembers.length} members.\n\nPlease note: Your browser might block multiple pop-ups. If so, please allow pop-ups for this site or send messages individually.\n\nProceed?`)) return;
+    
+    validMembers.forEach((member, index) => {
+      // Small delay to help with browser pop-up blocking
+      setTimeout(() => {
+        window.open(getWhatsAppLink(member), '_blank');
+      }, index * 800);
+    });
   };
 
   const handleRenew = async (member) => {
@@ -89,21 +106,39 @@ const Renewals = () => {
   return (
     <div className="page" style={{ paddingBottom: '100px' }}>
       {/* ── Header ── */}
-      <div style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-          <div style={{
-            width: '40px', height: '40px', borderRadius: '12px',
-            background: 'linear-gradient(135deg, #FFA000, #FF5E7E)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(255,160,0,0.3)'
-          }}>
-            <Bell size={20} color="#fff" />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '28px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '12px',
+              background: 'linear-gradient(135deg, #FFA000, #FF5E7E)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 16px rgba(255,160,0,0.3)'
+            }}>
+              <Bell size={20} color="#fff" />
+            </div>
+            <div>
+              <h2 style={{ margin: 0 }}>Renewal Center</h2>
+            </div>
           </div>
-          <div>
-            <h2 style={{ margin: 0 }}>Renewal Center</h2>
-          </div>
+          <p style={{ margin: 0, color: 'var(--text-3)' }}>Manage expirations, pending dues, and WhatsApp follow-ups</p>
         </div>
-        <p style={{ margin: 0, color: 'var(--text-3)' }}>Manage expirations, pending dues, and WhatsApp follow-ups</p>
+        
+        {uniqueRenewals.length > 0 && (
+          <button 
+            className="btn" 
+            onClick={handleSendAll}
+            style={{ 
+              background: '#25D366', 
+              color: '#fff', 
+              gap: '8px', 
+              boxShadow: '0 4px 12px rgba(37,211,102,0.3)' 
+            }}
+          >
+            <MessageCircle size={18} />
+            Send All Reminders
+          </button>
+        )}
       </div>
 
       {/* ── Stats Row ── */}

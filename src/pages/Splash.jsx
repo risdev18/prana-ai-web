@@ -218,7 +218,8 @@ const Splash = () => {
                     </div>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       {Array.from({ length: 48 }).map((_, i) => {
-                        const intensity = Math.random();
+                        // Use a deterministic pattern based on index instead of Math.random
+                        const intensity = (Math.sin(i * 13) + 1) / 2; // Pseudo-random 0-1
                         let bg = 'rgba(255,255,255,0.03)';
                         if (intensity > 0.8) bg = 'rgba(0,212,255,0.8)';
                         else if (intensity > 0.5) bg = 'rgba(0,212,255,0.4)';

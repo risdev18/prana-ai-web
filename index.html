@@ -19,6 +19,13 @@
         overlay.style.display = 'block';
         overlay.innerHTML += '<p>Unhandled Promise Rejection: ' + event.reason + '</p>';
       });
+      window.addEventListener('error', function(event) {
+        if (event.target && event.target.tagName === 'SCRIPT') {
+          var overlay = document.getElementById('error-overlay');
+          overlay.style.display = 'block';
+          overlay.innerHTML += '<p>Failed to load script: ' + event.target.src + '</p>';
+        }
+      }, true);
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Search, Plus, UserCheck, Clock, UserX,
-  MessageCircle, RefreshCw, Phone, X, ChevronRight
+  MessageCircle, RefreshCw, Phone, X, ChevronRight, Upload
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToMembers, subscribeToEnquiries, getMemberStatus } from '../services/firestoreService';
 import MemberProfileModal from '../components/MemberProfileModal';
+import ImportMembersModal from '../components/ImportMembersModal';
 
 const Members = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Members = () => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedMember, setSelectedMember] = useState(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -101,13 +103,22 @@ const Members = () => {
             {members.length} registered members &bull; {enquiries.length} leads in CRM
           </p>
         </div>
-        <button
-          onClick={() => navigate('/add-member')}
-          className="btn btn-primary"
-          style={{ height: '40px', padding: '0 18px', borderRadius: 'var(--radius-sm)' }}
-        >
-          <Plus size={15} /> Add Member
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setIsImportOpen(true)}
+            className="btn btn-outline"
+            style={{ height: '40px', padding: '0 16px', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Upload size={15} /> Import Excel
+          </button>
+          <button
+            onClick={() => navigate('/add-member')}
+            className="btn btn-primary"
+            style={{ height: '40px', padding: '0 18px', borderRadius: 'var(--radius-sm)' }}
+          >
+            <Plus size={15} /> Add Member
+          </button>
+        </div>
       </div>
 
       {/* Tabs Layout */}
@@ -385,8 +396,16 @@ const Members = () => {
           onClose={() => setSelectedMember(null)}
         />
       )}
+
+      {/* Import Members Modal */}
+      <ImportMembersModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        gymId={currentUser?.uid}
+      />
     </div>
   );
 };
+
 
 export default Members;
