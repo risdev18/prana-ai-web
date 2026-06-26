@@ -6,6 +6,8 @@ import {
   MessageSquare, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { downloadGymBackupExcel } from '../utils/exportUtils';
+import toast from 'react-hot-toast';
 
 const NavItem = ({ to, icon: Icon, label, badge, onClick }) => (
   <NavLink
@@ -80,6 +82,12 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    try {
+      toast.success('Generating Auto-Backup before signing out...', { duration: 3000 });
+      await downloadGymBackupExcel(gymData.gymId, gymData.gymName);
+    } catch (err) {
+      console.warn("Backup failed on logout", err);
+    }
     try { await logout(); navigate('/login'); }
     catch (err) { console.error(err); }
   };

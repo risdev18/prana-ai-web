@@ -3,9 +3,8 @@ import { Settings as SettingsIcon, Save, Bell, MessageCircle, Users, Shield, Zap
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import ConfirmModal from '../components/ConfirmModal';
 import { updateGymProfile, deleteAllMembers, getMembersByGymId } from '../services/firestoreService';
-import * as XLSX from 'xlsx';
+import { downloadGymBackupExcel } from '../utils/exportUtils';
 
 
 const ToggleSwitch = ({ value, onChange }) => (
@@ -125,6 +124,12 @@ const Settings = () => {
   };
 
   const executeLogout = async () => {
+    try {
+      toast.success('Generating Auto-Backup before signing out...', { duration: 3000 });
+      await downloadGymBackupExcel(gymData.gymId, gymData.gymName);
+    } catch (err) {
+      console.warn("Backup failed on logout", err);
+    }
     await logout();
     navigate('/login');
   };
@@ -146,38 +151,13 @@ const Settings = () => {
   const handleExportData = async () => {
     setIsExporting(true);
     try {
-      const members = await getMembersByGymId(gymData.gymId);
-      if (!members || members.length === 0) {
+      const success = await downloadGymBackupExcel(gymData.gymId, gymData.gymName);
+      if (success) {
+        toast.success('Backup downloaded successfully!');
+      } else {
         toast.error('No members found to export.');
-        setIsExporting(false);
-        return;
       }
-
-      // Format data for Excel
-      const excelData = members.map(m => ({
-        'Member ID': m.shortId || '',
-        'Name': m.memberName || '',
-        'Phone': m.phone || '',
-        'Gender': m.gender || '',
-        'Age': m.age || '',
-        'Goal': m.goal || '',
-        'Status': m.paymentStatus || '',
-        'Fee': m.membershipFee || 0,
-        'Paid': m.amountPaid || 0,
-        'Start Date': m.membershipStartDate || '',
-        'End Date': m.membershipEndDate || '',
-        'Added On': new Date(m.createdAt).toLocaleDateString()
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
-      
-      const fileName = `${gymData.gymName.replace(/\s+/g, '_')}_Members_Backup.xlsx`;
-      XLSX.writeFile(workbook, fileName);
-      toast.success('Backup downloaded successfully!');
     } catch (err) {
-      console.error('Export Error:', err);
       toast.error('Failed to export data.');
     } finally {
       setIsExporting(false);
