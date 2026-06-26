@@ -1,6 +1,6 @@
 import {
   collection, doc, setDoc, updateDoc, deleteDoc,
-  getDocs, getDoc, query, orderBy, onSnapshot, where, writeBatch
+  getDocs, getDoc, query, orderBy, onSnapshot, where, writeBatch, limit
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -74,6 +74,7 @@ export const updateMember = async (gymId, member) => {
 };
 
 export const deleteMember = async (gymId, memberId) => {
+  // memberId here is the Firestore document ID (d.id from onSnapshot)
   const memberRef = doc(db, 'Gyms', gymId, 'Members', memberId);
   await deleteDoc(memberRef);
 };
@@ -258,12 +259,11 @@ export const subscribeToMemberTimeline = (gymId, memberId, callback) => {
   });
 };
 
-export const subscribeToRecentActivity = (gymId, callback, limitCount = 10) => {
-  // We can't use limit() easily without importing it, so we'll just fetch recent ones 
-  // or add limit to imports. Since we didn't add limit to import, we'll slice in UI.
+export const subscribeToRecentActivity = (gymId, callback) => {
   const q = query(
     collection(db, 'Gyms', gymId, 'ActivityTimeline'),
-    orderBy('timestamp', 'desc')
+    orderBy('timestamp', 'desc'),
+    limit(20)
   );
   return onSnapshot(q, (snapshot) => {
     callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));

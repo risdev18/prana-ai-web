@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Save, Bell, MessageCircle, Users, Shield, Zap, LogOut, CheckCircle, Building2, X } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Bell, MessageCircle, Users, Shield, Zap, LogOut, CheckCircle, Building2, X, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
-import { updateGymProfile, deleteAllMembers } from '../services/firestoreService';
+import { updateGymProfile, deleteAllMembers, getMembersByGymId } from '../services/firestoreService';
+import * as XLSX from 'xlsx';
 
 
 const ToggleSwitch = ({ value, onChange }) => (
@@ -82,6 +83,7 @@ const Settings = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [notifications, setNotifications] = useState({
     renewalAlerts: true,
@@ -138,6 +140,47 @@ const Settings = () => {
       toast.error('Failed to delete members. Please try again.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      const members = await getMembersByGymId(gymData.gymId);
+      if (!members || members.length === 0) {
+        toast.error('No members found to export.');
+        setIsExporting(false);
+        return;
+      }
+
+      // Format data for Excel
+      const excelData = members.map(m => ({
+        'Member ID': m.shortId || '',
+        'Name': m.memberName || '',
+        'Phone': m.phone || '',
+        'Gender': m.gender || '',
+        'Age': m.age || '',
+        'Goal': m.goal || '',
+        'Status': m.paymentStatus || '',
+        'Fee': m.membershipFee || 0,
+        'Paid': m.amountPaid || 0,
+        'Start Date': m.membershipStartDate || '',
+        'End Date': m.membershipEndDate || '',
+        'Added On': new Date(m.createdAt).toLocaleDateString()
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
+      
+      const fileName = `${gymData.gymName.replace(/\s+/g, '_')}_Members_Backup.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+      toast.success('Backup downloaded successfully!');
+    } catch (err) {
+      console.error('Export Error:', err);
+      toast.error('Failed to export data.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -256,14 +299,30 @@ const Settings = () => {
             </div>
           </SettingsSection>
 
-          {/* Danger Zone */}
           <div style={{
             background: 'rgba(255,94,126,0.05)', border: '1px solid rgba(255,94,126,0.2)',
             borderRadius: '16px', padding: '16px 20px'
           }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--error)', marginBottom: '12px' }}>
-              Danger Zone
+            <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: '12px' }}>
+              Data & Security
             </div>
+            
+            <button
+              onClick={handleExportData}
+              disabled={isExporting}
+              style={{
+                width: '100%', padding: '12px', borderRadius: '10px', marginBottom: '10px',
+                background: 'rgba(6,214,160,0.1)', border: '1px solid rgba(6,214,160,0.3)',
+                color: '#06d6a0', fontFamily: 'var(--font)', fontWeight: 700, fontSize: '14px',
+                cursor: isExporting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                transition: 'all 0.2s', opacity: isExporting ? 0.7 : 1
+              }}
+              onMouseEnter={e => !isExporting && (e.currentTarget.style.background = 'rgba(6,214,160,0.2)')}
+              onMouseLeave={e => !isExporting && (e.currentTarget.style.background = 'rgba(6,214,160,0.1)')}
+            >
+              <Download size={17} /> {isExporting ? 'Generating Excel...' : 'Download Full Data Backup (Excel)'}
+            </button>
+            
             <button
               onClick={() => setIsDeleteAllModalOpen(true)}
               style={{
