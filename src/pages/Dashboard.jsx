@@ -517,6 +517,7 @@ const Dashboard = () => {
         <MemberProfileModal
           member={selectedMember}
           gymId={currentUser.uid}
+          gymData={gymData}
           onClose={() => setSelectedMember(null)}
         />
       )}

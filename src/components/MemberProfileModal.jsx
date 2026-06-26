@@ -1,12 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, Activity, Medal, TrendingUp, AlertTriangle, Trash2 } from 'lucide-react';
+import { X, Calendar, Activity, Medal, TrendingUp, AlertTriangle, Trash2, MessageCircle, RefreshCw } from 'lucide-react';
 import { subscribeToMemberTimeline, deleteMember } from '../services/firestoreService';
 import ConfirmModal from './ConfirmModal';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
-const MemberProfileModal = ({ member, gymId, onClose }) => {
+const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
   const [timeline, setTimeline] = useState([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const getWhatsAppReminderLink = () => {
+    const phone = member.phone?.replace(/\D/g, '');
+    if (!phone) return '#';
+    const fp = phone.length === 10 ? `91${phone}` : phone;
+    const gymName = gymData?.gymName || 'our gym';
+    const balance = (member.membershipFee || 0) - (member.amountPaid || 0);
+    let text = `Hi ${member.memberName}, this is a reminder from ${gymName}. `;
+    if (member.membershipEndDate) {
+      text += `Your membership ends on ${new Date(member.membershipEndDate).toLocaleDateString()}. `;
+    }
+    if (balance > 0) {
+      text += `You have a pending balance of ₹${balance}. `;
+    }
+    text += `Please contact us to renew. Thank you!`;
+    return `https://wa.me/${fp}?text=${encodeURIComponent(text)}`;
+  };
 
   useEffect(() => {
     if (member?.id && gymId) {
@@ -89,8 +108,28 @@ const MemberProfileModal = ({ member, gymId, onClose }) => {
 
           {/* Quick Actions inside profile */}
           <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
-            <button className="btn btn-primary" style={{ flex: 1, padding: '10px' }}>Renew Membership</button>
-            <button className="btn btn-outline" style={{ flex: 1, padding: '10px' }}>Send Reminder</button>
+            <button 
+              className="btn btn-primary" 
+              style={{ flex: 1, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              onClick={() => { onClose(); navigate('/renewals'); }}
+            >
+              <RefreshCw size={15} /> Renew
+            </button>
+            {member.phone ? (
+              <a
+                href={getWhatsAppReminderLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+                style={{ flex: 1, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none', color: '#25D366', borderColor: '#25D366' }}
+              >
+                <MessageCircle size={15} /> Remind
+              </a>
+            ) : (
+              <button className="btn btn-outline" style={{ flex: 1, padding: '10px' }} onClick={() => toast.error('No phone number on profile.')}>
+                <MessageCircle size={15} /> Remind
+              </button>
+            )}
           </div>
 
           {/* Achievements (Stub) */}
