@@ -90,7 +90,7 @@ const Members = () => {
 
     text += `Thank you,\nTeam ${gymName}`;
 
-    return `https://api.whatsapp.com/send?phone=${fp}&text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${fp}?text=${encodeURIComponent(text)}`;
   };
 
   return (

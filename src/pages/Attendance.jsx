@@ -20,11 +20,12 @@ const Attendance = () => {
     r.memberName.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Heatmap data — last 30 days
+  // Heatmap data — last 30 days (real attendance will be fetched separately per day)
+  // We use a placeholder array with 0 counts; real data would require per-day Firestore queries
   const heatmapData = Array.from({ length: 30 }).map((_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (29 - i));
-    return { date: d, count: Math.floor(Math.random() * 50) };
+    return { date: d, count: 0 };
   });
 
   const getHeatmapColor = (count) => {

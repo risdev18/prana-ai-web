@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, Plus, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { subscribeToMembers } from '../services/firestoreService';
+import { subscribeToMembers, updateMember } from '../services/firestoreService';
+import toast from 'react-hot-toast';
 
 const Workouts = () => {
   const { currentUser } = useAuth();
@@ -18,10 +19,31 @@ const Workouts = () => {
 
   const filteredMembers = members.filter(m => m.memberName.toLowerCase().includes(search.toLowerCase()));
 
-  const handleAssign = (e) => {
+  const [workoutPlan, setWorkoutPlan] = useState('');
+  const [dietPlan, setDietPlan] = useState('');
+  const [trainerNotes, setTrainerNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleAssign = async (e) => {
     e.preventDefault();
-    alert('Plan assigned successfully!');
-    setAssigningTo(null);
+    if (!workoutPlan || !dietPlan) return;
+    setSaving(true);
+    try {
+      await updateMember(currentUser.uid, {
+        ...assigningTo,
+        assignedWorkout: workoutPlan,
+        assignedDiet: dietPlan,
+        trainerNotes,
+        planAssignedAt: new Date().toISOString(),
+      });
+      toast.success(`Plan assigned to ${assigningTo.memberName}!`);
+      setAssigningTo(null);
+      setWorkoutPlan(''); setDietPlan(''); setTrainerNotes('');
+    } catch {
+      toast.error('Failed to assign plan.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -42,7 +64,7 @@ const Workouts = () => {
           <form onSubmit={handleAssign} className="grid-2 gap-4">
             <div className="form-group mb-0">
               <label>Workout Template</label>
-              <select className="form-control" required>
+              <select className="form-control" required value={workoutPlan} onChange={e => setWorkoutPlan(e.target.value)}>
                 <option value="">Select a template...</option>
                 <option value="Beginner Full Body">Beginner Full Body</option>
                 <option value="Intermediate Split">Intermediate Split</option>
@@ -52,7 +74,7 @@ const Workouts = () => {
             </div>
             <div className="form-group mb-0">
               <label>Diet Template</label>
-              <select className="form-control" required>
+              <select className="form-control" required value={dietPlan} onChange={e => setDietPlan(e.target.value)}>
                 <option value="">Select a template...</option>
                 <option value="Standard Maintenance">Standard Maintenance</option>
                 <option value="Caloric Deficit">Caloric Deficit</option>
@@ -61,9 +83,11 @@ const Workouts = () => {
             </div>
             <div className="form-group mb-0" style={{ gridColumn: '1 / -1' }}>
               <label>Trainer Notes (Optional)</label>
-              <textarea className="form-control" rows={3} placeholder="Add specific instructions..."></textarea>
+              <textarea className="form-control" rows={3} placeholder="Add specific instructions..." value={trainerNotes} onChange={e => setTrainerNotes(e.target.value)}></textarea>
             </div>
-            <button type="submit" className="btn btn-primary" style={{ gridColumn: '1 / -1' }}>Assign & Notify Member</button>
+            <button type="submit" className="btn btn-primary" style={{ gridColumn: '1 / -1' }} disabled={saving}>
+              {saving ? 'Saving...' : 'Save & Assign Plan'}
+            </button>
           </form>
         </div>
       ) : (
