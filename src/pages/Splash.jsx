@@ -301,6 +301,25 @@ const Splash = () => {
         </section>
 
       </main>
+
+      {/* Footer */}
+      <footer style={{
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        padding: '20px 24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '12px',
+        color: 'var(--text-3)',
+        fontSize: '12px'
+      }}>
+        <div>© 2026 Prana AI. All rights reserved.</div>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          <button onClick={() => navigate('/privacy')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '12px' }}>Privacy Policy</button>
+          <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '12px' }}>Gym Login</button>
+        </div>
+      </footer>
     </div>
   );
 };

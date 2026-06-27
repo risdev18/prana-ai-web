@@ -4,13 +4,16 @@ import { auth } from '../services/firebase';
 import { getGymData, logoutGym } from '../services/authService';
 
 const PERMISSIONS = {
+  superadmin: [
+    'superdashboard', 'supergyms', 'supersettings', 'supertickets'
+  ],
   owner: [
     'dashboard', 'members', 'renewals', 'attendance', 'leads', 'queries',
-    'workouts', 'assessments', 'trainers', 'settings', 'expenses', 'tickets', 'reports'
+    'workouts', 'assessments', 'trainers', 'settings', 'expenses', 'tickets', 'reports', 'support'
   ],
   manager: [
     'dashboard', 'members', 'renewals', 'attendance', 'leads', 'queries',
-    'workouts', 'assessments', 'trainers', 'tickets'
+    'workouts', 'assessments', 'trainers', 'tickets', 'support'
   ],
   trainer: [
     'members', 'workouts', 'assessments', 'attendance'

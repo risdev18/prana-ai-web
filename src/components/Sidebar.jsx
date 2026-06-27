@@ -138,26 +138,40 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Navigation List */}
       <nav style={{ flex: 1, padding: '20px 10px', overflowY: 'auto' }}>
-        <NavSection label="Operations">
-          {hasPermission('dashboard') && <NavItem to="/dashboard"  icon={LayoutDashboard} label="Dashboard" onClick={onClose} />}
-          {hasPermission('members') && <NavItem to="/members"    icon={Users}           label="Members" onClick={onClose} />}
-          {hasPermission('renewals') && <NavItem to="/renewals"   icon={RefreshCw}       label="Renewals" onClick={onClose} />}
-          {hasPermission('attendance') && <NavItem to="/attendance" icon={CalendarCheck}   label="Attendance" onClick={onClose} />}
-          {hasPermission('leads') && <NavItem to="/leads"      icon={UserPlus}        label="Leads" onClick={onClose} />}
-          {hasPermission('queries') && <NavItem to="/queries"    icon={MessageSquare}   label="Queries" onClick={onClose} />}
-        </NavSection>
+        {hasPermission('superdashboard') ? (
+          <>
+            <NavSection label="Admin">
+              <NavItem to="/superadmin" icon={LayoutDashboard} label="Admin Dashboard" onClick={onClose} />
+              <NavItem to="/superadmin/gyms" icon={Users} label="Manage Gyms" onClick={onClose} />
+              <NavItem to="/superadmin/tickets" icon={ShieldAlert} label="Global Tickets" onClick={onClose} />
+              <NavItem to="/superadmin/settings" icon={Settings} label="Global Settings" onClick={onClose} />
+            </NavSection>
+          </>
+        ) : (
+          <>
+            <NavSection label="Operations">
+              {hasPermission('dashboard') && <NavItem to="/dashboard"  icon={LayoutDashboard} label="Dashboard" onClick={onClose} />}
+              {hasPermission('members') && <NavItem to="/members"    icon={Users}           label="Members" onClick={onClose} />}
+              {hasPermission('renewals') && <NavItem to="/renewals"   icon={RefreshCw}       label="Renewals" onClick={onClose} />}
+              {hasPermission('attendance') && <NavItem to="/attendance" icon={CalendarCheck}   label="Attendance" onClick={onClose} />}
+              {hasPermission('leads') && <NavItem to="/leads"      icon={UserPlus}        label="Leads" onClick={onClose} />}
+              {hasPermission('queries') && <NavItem to="/queries"    icon={MessageSquare}   label="Queries" onClick={onClose} />}
+            </NavSection>
 
-        <NavSection label="Fitness Core">
-          {hasPermission('workouts') && <NavItem to="/workouts"    icon={ClipboardList} label="Workouts" onClick={onClose} />}
-          {hasPermission('assessments') && <NavItem to="/assessments" icon={Activity}      label="Assessments" onClick={onClose} />}
-        </NavSection>
+            <NavSection label="Fitness Core">
+              {hasPermission('workouts') && <NavItem to="/workouts"    icon={ClipboardList} label="Workouts" onClick={onClose} />}
+              {hasPermission('assessments') && <NavItem to="/assessments" icon={Activity}      label="Assessments" onClick={onClose} />}
+            </NavSection>
 
-        <NavSection label="Management">
-          {hasPermission('expenses') && <NavItem to="/expenses" icon={DollarSign} label="Expenses" onClick={onClose} />}
-          {hasPermission('tickets') && <NavItem to="/tickets" icon={ShieldAlert} label="Tickets" onClick={onClose} />}
-          {hasPermission('trainers') && <NavItem to="/trainers" icon={Dumbbell} label="Trainers" onClick={onClose} />}
-          {hasPermission('settings') && <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} />}
-        </NavSection>
+            <NavSection label="Management">
+              {hasPermission('expenses') && <NavItem to="/expenses" icon={DollarSign} label="Expenses" onClick={onClose} />}
+              {hasPermission('tickets') && <NavItem to="/tickets" icon={ShieldAlert} label="Tickets" onClick={onClose} />}
+              {hasPermission('trainers') && <NavItem to="/trainers" icon={Dumbbell} label="Trainers" onClick={onClose} />}
+              {hasPermission('settings') && <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} />}
+              <NavItem to="/app-support" icon={ShieldAlert} label="Contact Admin" onClick={onClose} />
+            </NavSection>
+          </>
+        )}
       </nav>
 
       {/* Footer Mini Card */}

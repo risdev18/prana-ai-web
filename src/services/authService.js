@@ -7,15 +7,29 @@ export const registerGym = async ({ email, password, gymName, ownerName }) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
+    const isSuperAdmin = email.toLowerCase() === 'anshu@admin.com';
+    
     const gymData = {
       gymId: user.uid,
       gymName,
       ownerName,
       email,
+      role: isSuperAdmin ? 'superadmin' : 'owner',
+      status: isSuperAdmin ? 'active' : 'pending',
       createdAt: new Date().toISOString()
     };
 
     await setDoc(doc(db, 'Gyms', user.uid), gymData);
+
+    // If super admin is being created, also seed GlobalSettings
+    if (isSuperAdmin) {
+      await setDoc(doc(db, 'GlobalSettings', 'appSettings'), {
+        websiteName: 'Prana AI',
+        supportEmail: email,
+        supportPhone: 'Not Set',
+        supportIdImage: '',
+      });
+    }
     return gymData;
   } catch (error) {
     throw error;

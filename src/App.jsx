@@ -29,20 +29,72 @@ import Onboarding from './pages/Onboarding';
 import Queries from './pages/Queries';
 import Expenses from './pages/Expenses';
 import Tickets from './pages/Tickets';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import './App.css';
 
 const ProtectedRoute = ({ children, allowedFeature }) => {
-  const { currentUser, hasPermission } = useAuth();
+  const { currentUser, gymData, hasPermission } = useAuth();
   if (!currentUser) return <Navigate to="/login" />;
   
+  // If gymData has loaded and status is pending, block access
+  if (gymData && gymData.status === 'pending') {
+    return <Navigate to="/pending-approval" />;
+  }
+
+  // If gymData hasn't loaded yet, don't render anything (avoid flash)
+  if (currentUser && !gymData) {
+    return null;
+  }
+  
   if (allowedFeature && !hasPermission(allowedFeature)) {
+    // If superadmin trying to access owner routes or vice-versa, redirect appropriately
+    if (gymData?.role === 'superadmin') return <Navigate to="/superadmin" />;
+    
+    // If we are already heading to dashboard to avoid infinite loop
+    if (window.location.pathname === '/dashboard') {
+      return <div className="page" style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>
+        <h2>Setup Incomplete</h2>
+        <p>Your account data could not be fully loaded. This often happens if the initial registration was interrupted.</p>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '24px' }}>
+          <button className="btn btn-primary" onClick={async () => {
+             // Retry SuperAdmin setup
+             if (currentUser?.email === 'anshu@admin.com') {
+               try {
+                 const { doc, setDoc } = await import('firebase/firestore');
+                 const { db } = await import('./services/firebase');
+                 await setDoc(doc(db, 'Gyms', currentUser.uid), {
+                   gymId: currentUser.uid, gymName: 'Super Admin', ownerName: 'Anshu',
+                   email: currentUser.email, role: 'superadmin', status: 'active', createdAt: new Date().toISOString()
+                 });
+                 await setDoc(doc(db, 'GlobalSettings', 'appSettings'), {
+                   websiteName: 'Prana AI', supportEmail: currentUser.email, supportPhone: 'Not Set', supportIdImage: ''
+                 });
+                 window.location.href = '/superadmin';
+               } catch (e) {
+                 alert('Setup failed again: ' + e.message);
+               }
+             } else {
+               window.location.href = '/login';
+             }
+          }}>Complete Setup</button>
+          <button className="btn btn-outline" onClick={() => window.location.href = '/login'}>Go to Login</button>
+        </div>
+      </div>;
+    }
     return <Navigate to="/dashboard" />;
   }
 
   // Wrap protected children in MainLayout
   return <MainLayout>{children}</MainLayout>;
 };
+
+import PendingApproval from './pages/PendingApproval';
+import AppSupport from './pages/AppSupport';
+import SuperDashboard from './pages/superadmin/SuperDashboard';
+import SuperGyms from './pages/superadmin/SuperGyms';
+import SuperSettings from './pages/superadmin/SuperSettings';
+import SuperTickets from './pages/superadmin/SuperTickets';
 
 const AppRoutes = () => {
   return (
@@ -56,6 +108,15 @@ const AppRoutes = () => {
       <Route path="/member-portal" element={<MemberPortal />} />
       <Route path="/member-dashboard" element={<MemberDashboard />} />
       <Route path="/checkin/:gymId" element={<CheckIn />} />
+
+      {/* Pending Approval */}
+      <Route path="/pending-approval" element={<PendingApproval />} />
+
+      {/* Super Admin routes */}
+      <Route path="/superadmin" element={<ProtectedRoute allowedFeature="superdashboard"><SuperDashboard /></ProtectedRoute>} />
+      <Route path="/superadmin/gyms" element={<ProtectedRoute allowedFeature="supergyms"><SuperGyms /></ProtectedRoute>} />
+      <Route path="/superadmin/settings" element={<ProtectedRoute allowedFeature="supersettings"><SuperSettings /></ProtectedRoute>} />
+      <Route path="/superadmin/tickets" element={<ProtectedRoute allowedFeature="supertickets"><SuperTickets /></ProtectedRoute>} />
 
       {/* Owner protected routes - wrapped by ProtectedRoute which adds MainLayout */}
       <Route path="/dashboard" element={<ProtectedRoute allowedFeature="dashboard"><Dashboard /></ProtectedRoute>} />
@@ -76,6 +137,8 @@ const AppRoutes = () => {
       <Route path="/queries" element={<ProtectedRoute allowedFeature="queries"><Queries /></ProtectedRoute>} />
       <Route path="/expenses" element={<ProtectedRoute allowedFeature="expenses"><Expenses /></ProtectedRoute>} />
       <Route path="/tickets" element={<ProtectedRoute allowedFeature="tickets"><Tickets /></ProtectedRoute>} />
+      <Route path="/app-support" element={<ProtectedRoute allowedFeature="support"><AppSupport /></ProtectedRoute>} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" />} />
