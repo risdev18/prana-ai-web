@@ -176,31 +176,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Footer Mini Card */}
       <div style={{ padding: '14px 10px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'rgba(10, 8, 30, 0.2)' }}>
-        {gymData?.ownerName && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '10px 12px', borderRadius: 'var(--radius-md)',
-            background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border)',
-            marginBottom: '8px',
-          }}>
-            <div style={{
-              width: '32px', height: '32px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--primary-dim) 0%, rgba(93, 169, 255, 0.05) 100%)',
-              color: 'var(--primary-light)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: '13px', flexShrink: 0,
-              border: '1px solid rgba(124, 92, 255, 0.2)',
-            }}>
-              {gymData.ownerName[0]?.toUpperCase()}
-            </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {gymData.ownerName}
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Owner</div>
-            </div>
-          </div>
-        )}
+        
 
         <button
           onClick={handleLogout}

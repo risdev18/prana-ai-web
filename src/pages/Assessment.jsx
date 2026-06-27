@@ -1,11 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Download, Save, Activity, Droplets, Flame, Dumbbell, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Download, Save, Activity, Droplets, Flame, Dumbbell, CheckCircle, MessageCircle, Calendar, Clipboard, QrCode } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { addMember, saveAssessment } from '../services/firestoreService';
+import { addMember, saveAssessment, markAttendance } from '../services/firestoreService';
 import { generateRecommendations, getBMICategory, getHealthyWeightRange } from '../core/calculator';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import ReceiptModal from '../components/ReceiptModal';
+import QRCode from 'react-qr-code';
 
 const Assessment = () => {
   const { state } = useLocation();
@@ -13,6 +15,9 @@ const Assessment = () => {
   const { currentUser, gymData } = useAuth();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedMember, setSavedMember] = useState(null);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [attendanceCheckedIn, setAttendanceCheckedIn] = useState(false);
   const reportRef = useRef(null);
 
   if (!state?.assessment) {
@@ -49,13 +54,44 @@ const Assessment = () => {
         assessmentId: Date.now().toString(),
       });
       setSaved(true);
-      setTimeout(() => navigate('/dashboard'), 1500);
+      setSavedMember(assessment);
     } catch (err) {
       console.error(err);
       alert('Failed to save report.');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleMarkAttendance = async () => {
+    if (!savedMember) return;
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      await markAttendance(currentUser.uid, todayStr, savedMember.memberId, savedMember.memberName);
+      setAttendanceCheckedIn(true);
+    } catch (err) {
+      console.error('Failed to mark attendance', err);
+    }
+  };
+
+  const getWhatsAppWelcomeLink = (member) => {
+    const phone = (member.phone || '').replace(/\D/g, '');
+    if (!phone) return null;
+    const cleanPhone = phone.length === 10 ? `91${phone}` : phone;
+    const gymName = gymData?.gymName || 'our gym';
+    const startDateStr = member.membershipStartDate
+      ? new Date(member.membershipStartDate).toLocaleDateString('en-GB')
+      : new Date().toLocaleDateString('en-GB');
+    const text =
+      `🏋️‍♂️ Welcome to ${gymName}, ${member.memberName}!\n\n` +
+      `Your membership has been successfully activated.\n\n` +
+      `🆔 Member ID: ${member.shortId}\n` +
+      `📅 Joining Date: ${startDateStr}\n\n` +
+      `We're excited to be a part of your fitness journey and help you achieve your goals. Stay consistent, train hard, and remember—every workout brings you one step closer to your best self!\n\n` +
+      `If you need any assistance, feel free to contact our team.\n\n` +
+      `Welcome to the ${gymName} family! 💪🔥\n\n` +
+      `Team ${gymName}`;
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
   };
 
   const handleDownloadPDF = async () => {
@@ -301,7 +337,7 @@ const Assessment = () => {
         </div>
 
         {/* Save Button */}
-        {isNew && (
+        {isNew && !savedMember && (
           <button
             onClick={handleSave} disabled={saving || saved}
             style={{
@@ -318,15 +354,85 @@ const Assessment = () => {
               opacity: saving ? 0.7 : 1
             }}
           >
-            {saved ? (
-              <><CheckCircle size={18} /> Saved! Redirecting...</>
-            ) : saving ? (
+            {saving ? (
               <><div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px', borderTopColor: '#fff', borderColor: 'rgba(255,255,255,0.2)' }} /> Saving...</>
             ) : (
               <><Save size={18} /> Save Member & Report</>
             )}
           </button>
         )}
+
+        {/* ── SUCCESS PANEL after save ── */}
+        {savedMember && (
+          <div className="card animate-fade-up" style={{ marginTop: '24px', padding: '28px', borderColor: 'rgba(6,214,160,0.3)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(6,214,160,0.15)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                <CheckCircle size={28} />
+              </div>
+              <h2 style={{ fontSize: '1.4rem', marginBottom: '4px' }}>Member Saved!</h2>
+              <p style={{ color: 'var(--text-2)', fontSize: '0.88rem' }}>{savedMember.memberName} has been registered with their fitness assessment.</p>
+            </div>
+
+            {/* Quick Summary */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px', display: 'flex', gap: '14px', alignItems: 'center', marginBottom: '22px' }}>
+              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.4rem', flexShrink: 0 }}>
+                {savedMember.memberName[0]?.toUpperCase()}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{savedMember.memberName}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', marginTop: '2px' }}>ID: <strong style={{ color: 'var(--primary-light)' }}>{savedMember.shortId}</strong></div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-2)', marginTop: '3px' }}>BMI: <strong style={{ color: getBmiColor(savedMember.bmi) }}>{savedMember.bmi?.toFixed(1)} — {getBMICategory(savedMember.bmi)}</strong></div>
+              </div>
+              <div style={{ background: '#fff', padding: '5px', borderRadius: '8px' }}>
+                <QRCode value={`${window.location.origin}/member-portal`} size={58} level="L" />
+              </div>
+            </div>
+
+            {/* Action Grid */}
+            <h3 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>🚀 Next Steps</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+              {getWhatsAppWelcomeLink(savedMember) && (
+                <a href={getWhatsAppWelcomeLink(savedMember)} target="_blank" rel="noopener noreferrer"
+                  className="btn btn-outline"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', textDecoration: 'none', background: 'rgba(37,211,102,0.05)', borderColor: '#25D366', color: '#25D366' }}
+                >
+                  <MessageCircle size={16} /> Send Welcome
+                </a>
+              )}
+              <button onClick={handleMarkAttendance} disabled={attendanceCheckedIn}
+                className="btn btn-outline"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: attendanceCheckedIn ? 'rgba(6,214,160,0.1)' : 'transparent', borderColor: attendanceCheckedIn ? 'var(--success)' : 'var(--border)', color: attendanceCheckedIn ? 'var(--success)' : 'var(--text)' }}
+              >
+                <Calendar size={16} /> {attendanceCheckedIn ? 'Checked In ✓' : 'Mark Check-in'}
+              </button>
+              <button onClick={() => navigate(`/workouts?memberId=${savedMember.memberId}`)}
+                className="btn btn-outline"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px' }}
+              >
+                <Clipboard size={16} /> Assign Workout
+              </button>
+              <button onClick={() => setIsReceiptOpen(true)}
+                className="btn btn-outline"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px' }}
+              >
+                <QrCode size={16} /> Print Receipt
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-outline flex-1" onClick={() => navigate('/add-member')}>Add Another</button>
+              <button className="btn btn-primary flex-1" onClick={() => navigate('/members')}>View Members</button>
+            </div>
+
+            <ReceiptModal
+              isOpen={isReceiptOpen}
+              onClose={() => setIsReceiptOpen(false)}
+              member={savedMember}
+              gymData={gymData}
+            />
+          </div>
+        )}
+
       </div>
     </div>
   );

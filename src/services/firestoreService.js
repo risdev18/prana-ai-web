@@ -109,12 +109,15 @@ export const findGymByName = async (searchName) => {
 // ─── MEMBER PORTAL: Get all members of a gym ───
 
 export const getMembersByGymId = async (gymId) => {
-  const q = query(
-    collection(db, 'Gyms', gymId, 'Members'),
-    orderBy('createdAt', 'desc')
-  );
+  // No orderBy to avoid missing composite index issues — sort in-memory instead
+  const q = collection(db, 'Gyms', gymId, 'Members');
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+  const members = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+  return members.sort((a, b) => {
+    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const db2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return db2 - da;
+  });
 };
 
 // ─── ASSESSMENT HISTORY ───

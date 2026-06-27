@@ -87,10 +87,18 @@ const Dashboard = () => {
     if (!phone) return '#';
     const fp = phone.length === 10 ? `91${phone}` : phone;
     const gym = gymData?.gymName || 'our gym';
-    let txt = `Hi ${p.member.memberName}, message from *${gym}* 🏋️\n\n`;
-    if (p.type === 'expired') txt += `⚠️ *Membership Expired*\nBalance due: ₹${p.bal}.\nPlease renew to continue.\n\nThank you!`;
-    else if (p.type === 'expiring') txt += `📅 *Expiring in ${p.diff} day${p.diff !== 1 ? 's' : ''}*\nRenew early to avoid interruption.\n${p.bal > 0 ? `Balance: ₹${p.bal}.` : ''}\n\nThank you!`;
-    else txt += `💸 *Pending Dues: ₹${p.bal}*\nKindly clear your outstanding balance.\n\nThank you!`;
+    const dateStr = p.member.membershipEndDate ? new Date(p.member.membershipEndDate).toLocaleDateString('en-GB') : 'N/A';
+    
+    const txt = `🏋️‍♂️ Hi ${p.member.memberName},\n\n` +
+      `Your membership at ${gym} expired on ${dateStr}.\n\n` +
+      `Renew your membership today to continue enjoying:\n` +
+      `✅ Unlimited gym access\n` +
+      `✅ Member benefits and support\n` +
+      `✅ Uninterrupted fitness progress\n\n` +
+      `📞 Contact us or visit the gym to renew now.\n\n` +
+      `Thank you for being a part of the ${gym} family!\n\n` +
+      `Team ${gym}`;
+      
     return `https://wa.me/${fp}?text=${encodeURIComponent(txt)}`;
   };
 

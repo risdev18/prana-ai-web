@@ -36,24 +36,18 @@ const Renewals = () => {
 
   const generateRenewalMessage = (member) => {
     const gymName = gymData?.gymName || 'our gym';
-    const balance = (member.membershipFee || 0) - (member.amountPaid || 0);
-    let text = `Hi ${member.memberName} 👋\n\n`;
-    const dateStr = new Date(member.membershipEndDate).toLocaleDateString('en-GB');
-
-    if (member.status === 'Expired') {
-      text += `Your membership at ${gymName} expired on ${dateStr}.\n\n`;
-      text += `Renew now to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
-    } else if (member.status === 'Expiring Soon') {
-      text += `Your membership at ${gymName} will expire on ${dateStr}.\n\n`;
-      text += `Renew now to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
-    } else if (balance > 0) {
-      text += `You have an outstanding balance of ₹${balance} at ${gymName}.\n\n`;
-      text += `Kindly clear your dues to continue enjoying uninterrupted access to the gym and member benefits.\n\n`;
-    } else {
-      text += `We hope you are enjoying your workouts at ${gymName}!\n\n`;
-    }
-
-    text += `Thank you,\nTeam ${gymName}`;
+    const dateStr = member.membershipEndDate ? new Date(member.membershipEndDate).toLocaleDateString('en-GB') : 'N/A';
+    
+    const text = `🏋️‍♂️ Hi ${member.memberName},\n\n` +
+      `Your membership at ${gymName} expired on ${dateStr}.\n\n` +
+      `Renew your membership today to continue enjoying:\n` +
+      `✅ Unlimited gym access\n` +
+      `✅ Member benefits and support\n` +
+      `✅ Uninterrupted fitness progress\n\n` +
+      `📞 Contact us or visit the gym to renew now.\n\n` +
+      `Thank you for being a part of the ${gymName} family!\n\n` +
+      `Team ${gymName}`;
+      
     return text;
   };
 

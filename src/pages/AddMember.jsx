@@ -175,20 +175,18 @@ const AddMember = () => {
   const getWhatsAppWelcomeLink = (member) => {
     const phone = member.phone.replace(/\D/g, '');
     const cleanPhone = phone.length === 10 ? `91${phone}` : phone;
-    const balance = member.membershipFee - member.amountPaid;
     const gymName = gymData?.gymName || 'our gym';
+    const startDateStr = member.membershipStartDate ? new Date(member.membershipStartDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
     
-    let text = `Hi ${member.memberName}, welcome to ${gymName}! 🏋️\n`;
-    text += `Your Gym Member ID: ${member.shortId}\n`;
-    text += `Membership Ends On: ${new Date(member.membershipEndDate).toLocaleDateString()}\n`;
-    
-    if (balance > 0) {
-      text += `Pending Balance: ₹${balance}\n`;
-    } else {
-      text += `Payment: Fully Paid ✓\n`;
-    }
-    
-    text += `Let's crush your fitness goals together!`;
+    const text = `🏋️‍♂️ Welcome to ${gymName}, ${member.memberName}!\n\n` +
+      `Your membership has been successfully activated.\n\n` +
+      `🆔 Member ID: ${member.shortId}\n` +
+      `📅 Joining Date: ${startDateStr}\n\n` +
+      `We're excited to be a part of your fitness journey and help you achieve your goals. Stay consistent, train hard, and remember—every workout brings you one step closer to your best self!\n\n` +
+      `If you need any assistance, feel free to contact our team.\n\n` +
+      `Welcome to the ${gymName} family! 💪🔥\n\n` +
+      `Team ${gymName}`;
+      
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
   };
 

@@ -132,7 +132,7 @@ const PendingApproval = () => {
                 <span>{settings.supportPhone}</span>
               </a>
             )}
-            {settings.supportEmail && (
+            {settings.supportEmail && settings.supportEmail !== 'anshu@admin.com' && (
               <a href={`mailto:${settings.supportEmail}`} style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '12px 0',
