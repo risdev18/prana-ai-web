@@ -81,7 +81,7 @@ const ProtectedRoute = ({ children, allowedFeature }) => {
             try {
               const { doc, setDoc, getDoc } = await import('firebase/firestore');
               const { db } = await import('./services/firebase');
-              const isSuperAdmin = currentUser.email === 'anshu@admin.com';
+              const isSuperAdmin = ['anshu@admin.com', 'rishabhsonawane18@gmail.com', 'sonawaneanshu18@gmail.com'].includes(currentUser.email?.toLowerCase());
               await setDoc(doc(db, 'Gyms', currentUser.uid), {
                 gymId: currentUser.uid,
                 gymName: isSuperAdmin ? 'Super Admin' : 'My Gym',
@@ -95,7 +95,7 @@ const ProtectedRoute = ({ children, allowedFeature }) => {
                 const settingsRef = doc(db, 'GlobalSettings', 'appSettings');
                 const snap = await getDoc(settingsRef);
                 if (!snap.exists()) {
-                  await setDoc(settingsRef, { websiteName: 'Prana AI', supportEmail: currentUser.email, supportPhone: 'Not Set', supportIdImage: '' });
+                  await setDoc(settingsRef, { websiteName: 'Prana AI', supportEmail: 'support@prana-ai.com', supportPhone: 'Not Set', supportIdImage: '' });
                 }
                 window.location.href = '/superadmin';
               } else {

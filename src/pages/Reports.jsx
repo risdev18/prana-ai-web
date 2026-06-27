@@ -128,6 +128,63 @@ const Reports = () => {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Transactions Table */}
+      <div style={{
+        background: 'var(--bg-card)', border: '1px solid var(--border)',
+        borderRadius: '20px', overflow: 'hidden', boxShadow: 'var(--shadow-md)',
+        marginBottom: '40px'
+      }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontFamily: 'var(--font-head)' }}>Recent Transactions</h3>
+          <span style={{ fontSize: '12px', color: 'var(--text-3)' }}>Total: {transactions.length} record(s)</span>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border)' }}>
+                <th style={{ padding: '14px 20px', color: 'var(--text-3)', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
+                <th style={{ padding: '14px 20px', color: 'var(--text-3)', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</th>
+                <th style={{ padding: '14px 20px', color: 'var(--text-3)', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</th>
+                <th style={{ padding: '14px 20px', color: 'var(--text-3)', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description/Notes</th>
+                <th style={{ padding: '14px 20px', color: 'var(--text-3)', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)', fontSize: '13.5px' }}>
+                    No transactions found. Recorded income and expenses will display here.
+                  </td>
+                </tr>
+              ) : (
+                transactions.map((t, idx) => {
+                  const isExpense = t.type === 'expense';
+                  const dateVal = t.date || (t.createdAt ? new Date(t.createdAt).toISOString().split('T')[0] : 'N/A');
+                  return (
+                    <tr key={t.id || idx} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <td style={{ padding: '14px 20px', fontSize: '13px', color: '#fff' }}>{dateVal}</td>
+                      <td style={{ padding: '14px 20px' }}>
+                        <span className={`badge ${isExpense ? 'badge-red' : 'badge-green'}`} style={{ fontSize: '10.5px', padding: '2px 8px' }}>
+                          {isExpense ? 'Expense' : 'Income'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--text-2)' }}>{t.method || 'N/A'}</td>
+                      <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--text-2)', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.notes || 'No description'}</td>
+                      <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 700, color: isExpense ? 'var(--error)' : 'var(--success)', textAlign: 'right' }}>
+                        {isExpense ? '-' : '+'} ₹{Number(t.amount || 0).toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
       
     </div>
   );

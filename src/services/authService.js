@@ -7,7 +7,7 @@ export const registerGym = async ({ email, password, gymName, ownerName }) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    const isSuperAdmin = email.toLowerCase() === 'anshu@admin.com';
+    const isSuperAdmin = ['anshu@admin.com', 'rishabhsonawane18@gmail.com', 'sonawaneanshu18@gmail.com'].includes(email.toLowerCase());
     
     const gymData = {
       gymId: user.uid,
@@ -25,7 +25,7 @@ export const registerGym = async ({ email, password, gymName, ownerName }) => {
     if (isSuperAdmin) {
       await setDoc(doc(db, 'GlobalSettings', 'appSettings'), {
         websiteName: 'Prana AI',
-        supportEmail: email,
+        supportEmail: 'support@prana-ai.com',
         supportPhone: 'Not Set',
         supportIdImage: '',
       });
@@ -49,7 +49,7 @@ export const loginGym = async ({ email, password }) => {
     }
 
     // If gym data is missing but this is the Super Admin, auto-create it
-    const isSuperAdmin = email.toLowerCase() === 'anshu@admin.com';
+    const isSuperAdmin = ['anshu@admin.com', 'rishabhsonawane18@gmail.com', 'sonawaneanshu18@gmail.com'].includes(email.toLowerCase());
     if (isSuperAdmin) {
       const adminData = {
         gymId: user.uid,
@@ -68,7 +68,7 @@ export const loginGym = async ({ email, password }) => {
       if (!settingsSnap.exists()) {
         await setDoc(settingsRef, {
           websiteName: 'Prana AI',
-          supportEmail: email,
+          supportEmail: 'support@prana-ai.com',
           supportPhone: 'Not Set',
           supportIdImage: '',
         });

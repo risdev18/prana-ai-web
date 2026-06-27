@@ -4,7 +4,11 @@ service cloud.firestore {
 
     // ─── SUPER ADMIN UTILITIES ───
     function isSuperAdmin() {
-      return request.auth != null && request.auth.token.email == 'anshu@admin.com';
+      return request.auth != null && (
+        request.auth.token.email == 'anshu@admin.com' ||
+        request.auth.token.email == 'rishabhsonawane18@gmail.com' ||
+        request.auth.token.email == 'sonawaneanshu18@gmail.com'
+      );
     }
 
     match /{document=**} {
@@ -52,12 +56,11 @@ service cloud.firestore {
       }
 
       // ─── ATTENDANCE ───
-      // Any signed-in user can mark attendance (staff/reception).
-      // Only the owner can modify or delete attendance records.
+      // Anyone can mark attendance (first check-in) or update check-out time via the check-in page.
+      // Only the owner can delete attendance records.
       match /Attendance/{date}/Records/{recordId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null;
-        allow update, delete: if request.auth != null && request.auth.uid == gymId;
+        allow read, create, update: if true;
+        allow delete: if request.auth != null && request.auth.uid == gymId;
       }
 
       // ─── QUERIES / COMPLAINTS ───

@@ -79,6 +79,9 @@ const Settings = () => {
   const [address, setAddress] = useState(gymData?.address || '');
   const [logoUrl, setLogoUrl] = useState(gymData?.logoUrl || '');
   const [signatureUrl, setSignatureUrl] = useState(gymData?.signatureUrl || '');
+  const [supportPhone, setSupportPhone] = useState(gymData?.supportPhone || '');
+  const [supportWebsite, setSupportWebsite] = useState(gymData?.supportWebsite || '');
+  const [supportEmail, setSupportEmail] = useState(gymData?.supportEmail || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
@@ -111,7 +114,10 @@ const Settings = () => {
         phone,
         address,
         logoUrl,
-        signatureUrl
+        signatureUrl,
+        supportPhone,
+        supportWebsite,
+        supportEmail
       });
       await refreshGymData(); // Refresh context so receipt shows new data immediately
       toast.success('Settings saved successfully!');
@@ -258,6 +264,21 @@ const Settings = () => {
                 <input type="file" accept="image/*" onChange={e => handleImageUpload(e, setSignatureUrl)} style={{ fontSize: '12px' }} />
                 {signatureUrl && <button type="button" className="btn btn-ghost" style={{ padding: '4px', color: 'var(--error)' }} onClick={() => setSignatureUrl('')}><X size={16} /></button>}
               </div>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection title="Support Channels" icon={<Zap size={18} />} color="#00D4FF">
+            <div className="form-group" style={{ marginTop: '14px' }}>
+              <label>Support Mobile Number</label>
+              <input type="tel" className="form-control" value={supportPhone} onChange={e => setSupportPhone(e.target.value)} placeholder="e.g. +91 98765 43210" />
+            </div>
+            <div className="form-group">
+              <label>Support Website URL</label>
+              <input type="url" className="form-control" value={supportWebsite} onChange={e => setSupportWebsite(e.target.value)} placeholder="https://example.com" />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Support Email Address</label>
+              <input type="email" className="form-control" value={supportEmail} onChange={e => setSupportEmail(e.target.value)} placeholder="support@gym.com" />
             </div>
           </SettingsSection>
 

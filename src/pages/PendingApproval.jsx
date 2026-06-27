@@ -103,7 +103,7 @@ const PendingApproval = () => {
 
         <h2 style={{ marginBottom: '12px', fontSize: '24px' }}>Account Pending Approval</h2>
         <p style={{ color: 'var(--text-3)', lineHeight: '1.7', marginBottom: '32px', fontSize: '15px' }}>
-          Your gym registration for <strong style={{ color: '#fff' }}>{gymData?.gymName || 'your gym'}</strong> has been received successfully!
+          Your gym registration has been received successfully!
           <br /><br />
           Since payments are handled offline, an admin needs to manually activate your account after payment confirmation. Please contact the admin below:
         </p>

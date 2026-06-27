@@ -118,6 +118,132 @@ const AppSupport = () => {
           </div>
         </div>
       </div>
+
+      {/* Gym Owner's Own Configured Support Channels */}
+      {(gymData?.supportPhone || gymData?.supportWebsite || gymData?.supportEmail) && (
+        <div style={{ marginTop: '40px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              🎯 Gym Support Shortcuts
+            </h3>
+            <p style={{ margin: '4px 0 0 0', color: 'var(--text-3)', fontSize: '13px' }}>Quick links to launch your configured customer support channels</p>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            {gymData.supportPhone && (
+              <a 
+                href={`https://wa.me/${gymData.supportPhone.replace(/\D/g, '')}`} 
+                target="_blank" 
+                rel="noreferrer"
+                style={{
+                  flex: '1 1 200px',
+                  background: 'linear-gradient(135deg, rgba(37,211,102,0.15) 0%, rgba(37,211,102,0.05) 100%)',
+                  border: '1px solid rgba(37,211,102,0.3)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  boxShadow: '0 4px 20px rgba(37,211,102,0.05)',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,211,102,0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(37,211,102,0.05)';
+                }}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                  <Phone size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'rgba(37,211,102,0.8)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp Support</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px' }}>{gymData.supportPhone}</div>
+                </div>
+              </a>
+            )}
+
+            {gymData.supportWebsite && (
+              <a 
+                href={gymData.supportWebsite} 
+                target="_blank" 
+                rel="noreferrer"
+                style={{
+                  flex: '1 1 200px',
+                  background: 'linear-gradient(135deg, rgba(0,212,255,0.15) 0%, rgba(0,212,255,0.05) 100%)',
+                  border: '1px solid rgba(0,212,255,0.3)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  boxShadow: '0 4px 20px rgba(0,212,255,0.05)',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,212,255,0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,212,255,0.05)';
+                }}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#00D4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                  <Shield size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'rgba(0,212,255,0.8)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gym Website</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{gymData.supportWebsite.replace(/^https?:\/\/(www\.)?/, '')}</div>
+                </div>
+              </a>
+            )}
+
+            {gymData.supportEmail && (
+              <a 
+                href={`mailto:${gymData.supportEmail}`}
+                style={{
+                  flex: '1 1 200px',
+                  background: 'linear-gradient(135deg, rgba(124,92,255,0.15) 0%, rgba(124,92,255,0.05) 100%)',
+                  border: '1px solid rgba(124,92,255,0.3)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  boxShadow: '0 4px 20px rgba(124,92,255,0.05)',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(124,92,255,0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(124,92,255,0.05)';
+                }}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#7C5CFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                  <Mail size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'rgba(124,92,255,0.8)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Support</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{gymData.supportEmail}</div>
+                </div>
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
