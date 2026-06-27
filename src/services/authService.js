@@ -46,9 +46,37 @@ export const loginGym = async ({ email, password }) => {
     
     if (docSnap.exists()) {
       return docSnap.data();
-    } else {
-      throw new Error("Gym data not found");
     }
+
+    // If gym data is missing but this is the Super Admin, auto-create it
+    const isSuperAdmin = email.toLowerCase() === 'anshu@admin.com';
+    if (isSuperAdmin) {
+      const adminData = {
+        gymId: user.uid,
+        gymName: 'Super Admin',
+        ownerName: 'Anshu',
+        email: user.email,
+        role: 'superadmin',
+        status: 'active',
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(docRef, adminData);
+
+      // Also seed GlobalSettings if not already present
+      const settingsRef = doc(db, 'GlobalSettings', 'appSettings');
+      const settingsSnap = await getDoc(settingsRef);
+      if (!settingsSnap.exists()) {
+        await setDoc(settingsRef, {
+          websiteName: 'Prana AI',
+          supportEmail: email,
+          supportPhone: 'Not Set',
+          supportIdImage: '',
+        });
+      }
+      return adminData;
+    }
+
+    throw new Error("Gym data not found. Please contact support.");
   } catch (error) {
     throw error;
   }
