@@ -34,7 +34,28 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import './App.css';
 
 const ProtectedRoute = ({ children, allowedFeature }) => {
-  const { currentUser, gymData, hasPermission } = useAuth();
+  const { currentUser, gymData, loading, hasPermission } = useAuth();
+
+  // Still loading auth/gymData — show a fullscreen spinner
+  if (loading || (currentUser && !gymData)) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: 'var(--bg-main)', color: '#fff', gap: '20px'
+      }}>
+        <div style={{
+          width: '48px', height: '48px', borderRadius: '50%',
+          border: '3px solid rgba(124,92,255,0.2)',
+          borderTop: '3px solid var(--primary)',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <p style={{ color: 'var(--text-3)', fontSize: '14px' }}>Loading your workspace…</p>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   if (!currentUser) return <Navigate to="/login" />;
   
   // If gymData has loaded and status is pending, block access
@@ -42,46 +63,43 @@ const ProtectedRoute = ({ children, allowedFeature }) => {
     return <Navigate to="/pending-approval" />;
   }
 
-  // If gymData hasn't loaded yet, don't render anything (avoid flash)
-  if (currentUser && !gymData) {
-    return null;
-  }
-  
-  if (allowedFeature && !hasPermission(allowedFeature)) {
-    // If superadmin trying to access owner routes or vice-versa, redirect appropriately
-    if (gymData?.role === 'superadmin') return <Navigate to="/superadmin" />;
-    
-    // If we are already heading to dashboard to avoid infinite loop
-    if (window.location.pathname === '/dashboard') {
-      return <div className="page" style={{ color: '#fff', padding: '40px', textAlign: 'center' }}>
-        <h2>Setup Incomplete</h2>
-        <p>Your account data could not be fully loaded. This often happens if the initial registration was interrupted.</p>
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '24px' }}>
+  // If gymData is still null after loading completed — something went wrong
+  if (!gymData) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: '#fff', padding: '40px', textAlign: 'center' }}>
+        <h2 style={{ marginBottom: '12px' }}>Setup Incomplete</h2>
+        <p style={{ color: 'var(--text-3)', marginBottom: '24px', maxWidth: '400px' }}>
+          Your account data could not be loaded. This can happen if registration was interrupted.
+        </p>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
           <button className="btn btn-primary" onClick={async () => {
-             // Retry SuperAdmin setup
-             if (currentUser?.email === 'anshu@admin.com') {
-               try {
-                 const { doc, setDoc } = await import('firebase/firestore');
-                 const { db } = await import('./services/firebase');
-                 await setDoc(doc(db, 'Gyms', currentUser.uid), {
-                   gymId: currentUser.uid, gymName: 'Super Admin', ownerName: 'Anshu',
-                   email: currentUser.email, role: 'superadmin', status: 'active', createdAt: new Date().toISOString()
-                 });
-                 await setDoc(doc(db, 'GlobalSettings', 'appSettings'), {
-                   websiteName: 'Prana AI', supportEmail: currentUser.email, supportPhone: 'Not Set', supportIdImage: ''
-                 });
-                 window.location.href = '/superadmin';
-               } catch (e) {
-                 alert('Setup failed again: ' + e.message);
-               }
-             } else {
-               window.location.href = '/login';
-             }
+            if (currentUser?.email === 'anshu@admin.com') {
+              try {
+                const { doc, setDoc } = await import('firebase/firestore');
+                const { db } = await import('./services/firebase');
+                await setDoc(doc(db, 'Gyms', currentUser.uid), {
+                  gymId: currentUser.uid, gymName: 'Super Admin', ownerName: 'Anshu',
+                  email: currentUser.email, role: 'superadmin', status: 'active', createdAt: new Date().toISOString()
+                });
+                await setDoc(doc(db, 'GlobalSettings', 'appSettings'), {
+                  websiteName: 'Prana AI', supportEmail: currentUser.email, supportPhone: 'Not Set', supportIdImage: ''
+                });
+                window.location.href = '/superadmin';
+              } catch (e) {
+                alert('Setup failed: ' + e.message);
+              }
+            } else {
+              window.location.href = '/login';
+            }
           }}>Complete Setup</button>
           <button className="btn btn-outline" onClick={() => window.location.href = '/login'}>Go to Login</button>
         </div>
-      </div>;
-    }
+      </div>
+    );
+  }
+  
+  if (allowedFeature && !hasPermission(allowedFeature)) {
+    if (gymData?.role === 'superadmin') return <Navigate to="/superadmin" />;
     return <Navigate to="/dashboard" />;
   }
 

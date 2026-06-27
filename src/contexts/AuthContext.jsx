@@ -96,6 +96,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     gymData,
+    loading,
     logout: logoutGym,
     refreshGymData,
     hasPermission,
