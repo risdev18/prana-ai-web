@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Shield, Users, CalendarCheck, RefreshCw, MessageCircle, UserPlus, Zap, TrendingUp, CheckCircle, Smartphone } from 'lucide-react';
@@ -28,10 +28,13 @@ const Splash = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  if (currentUser) {
-    navigate('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/dashboard');
+    }
+  }, [currentUser, navigate]);
+
+  if (currentUser) return null;
 
   const features = [
     {

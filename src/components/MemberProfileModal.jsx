@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Calendar, Activity, Medal, TrendingUp, AlertTriangle, Trash2, MessageCircle, RefreshCw } from 'lucide-react';
-import { subscribeToMemberTimeline, deleteMember } from '../services/firestoreService';
+import { subscribeToMemberTimeline, deleteMember, logAudit } from '../services/firestoreService';
 import ConfirmModal from './ConfirmModal';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +37,7 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
   const handleDelete = async () => {
     try {
       await deleteMember(gymId, member.id);
+      await logAudit(gymId, gymId, 'DELETE_MEMBER', `Deleted member: ${member.memberName} (${member.shortId || member.id})`);
       toast.success('Member profile deleted');
       onClose();
     } catch (err) {

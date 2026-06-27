@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { RefreshCw, MessageCircle, AlertTriangle, Phone, CheckCircle, Bell, TrendingDown, Clock, Zap } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { RefreshCw, MessageCircle, AlertTriangle, Phone, CheckCircle, Bell, TrendingDown, Clock, Zap, DollarSign } from 'lucide-react';
 import { subscribeToMembers, getMemberStatus, updateMember } from '../services/firestoreService';
 import toast from 'react-hot-toast';
+import PaymentModal from '../components/PaymentModal';
+import { getWhatsAppLink } from '../utils/whatsapp';
+import { useAuth } from '../contexts/AuthContext';
 
 const Renewals = () => {
   const { currentUser, gymData } = useAuth();
   const [members, setMembers] = useState([]);
   const [loadingId, setLoadingId] = useState(null);
+  const [selectedPaymentMember, setSelectedPaymentMember] = useState(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -20,7 +23,9 @@ const Renewals = () => {
   const expiringMembers = membersWithStatus.filter(m => m.status === 'Expiring Soon');
   const expiredMembers = membersWithStatus.filter(m => m.status === 'Expired');
   const pendingPaymentMembers = membersWithStatus.filter(m => {
-    const balance = (m.membershipFee || 0) - (m.amountPaid || 0);
+    const fee = m.membershipFee ?? 0;
+    const paid = m.amountPaid ?? 0;
+    const balance = fee - paid;
     return balance > 0 && m.status !== 'Expired';
   });
 
@@ -29,11 +34,7 @@ const Renewals = () => {
   );
   const uniqueRenewals = Array.from(new Set(allRenewals.map(a => a.id))).map(id => allRenewals.find(a => a.id === id));
 
-  const getWhatsAppLink = (member) => {
-    const phone = member.phone?.replace(/\D/g, '');
-    if (!phone) return '#';
-    let cleanedPhone = phone.startsWith('0') ? phone.slice(1) : phone;
-    const formattedPhone = cleanedPhone.length === 10 ? `91${cleanedPhone}` : cleanedPhone;
+  const generateRenewalMessage = (member) => {
     const gymName = gymData?.gymName || 'our gym';
     const balance = (member.membershipFee || 0) - (member.amountPaid || 0);
     let text = `Hi ${member.memberName} 👋\n\n`;
@@ -53,8 +54,7 @@ const Renewals = () => {
     }
 
     text += `Thank you,\nTeam ${gymName}`;
-
-    return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`;
+    return text;
   };
 
   const handleSendAll = () => {
@@ -68,13 +68,14 @@ const Renewals = () => {
     validMembers.forEach((member, index) => {
       // Small delay to help with browser pop-up blocking
       setTimeout(() => {
-        window.open(getWhatsAppLink(member), '_blank');
+        const link = getWhatsAppLink(member.phone, generateRenewalMessage(member));
+        if (link) window.open(link, '_blank');
       }, index * 800);
     });
   };
 
   const handleRenew = async (member) => {
-    if (!window.confirm(`Mark ${member.memberName} as Renewed & Fully Paid?`)) return;
+    if (!window.confirm(`Mark ${member.memberName} as Renewed & extend membership by 1 month?`)) return;
     setLoadingId(member.id);
     try {
       const updatedMember = { ...member };
@@ -82,12 +83,15 @@ const Renewals = () => {
       const today = new Date();
       const baseDate = currentEnd < today ? today : currentEnd;
       baseDate.setMonth(baseDate.getMonth() + 1);
+      
       updatedMember.membershipEndDate = baseDate.toISOString().split('T')[0];
-      updatedMember.amountPaid = updatedMember.membershipFee || 1500;
-      updatedMember.paymentStatus = 'Paid';
+      // We do NOT set amountPaid here. The Khata system handles payments separately.
+      updatedMember.paymentStatus = 'Pending';
+      
       await updateMember(currentUser.uid, updatedMember);
+      toast.success('Membership extended. Please log payment if received.');
     } catch (err) {
-      alert('Failed to renew member');
+      toast.error('Failed to renew member');
     } finally {
       setLoadingId(null);
     }
@@ -207,7 +211,9 @@ const Renewals = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {uniqueRenewals.map(item => {
-                const balance = (item.membershipFee || 0) - (item.amountPaid || 0);
+                const fee = item.membershipFee ?? 0;
+                const paid = item.amountPaid ?? 0;
+                const balance = fee - paid;
                 const isExpired = item.status === 'Expired';
                 const hasBalance = balance > 0;
                 const urgentColor = isExpired || hasBalance ? '#FF5E7E' : '#FFA000';
@@ -274,7 +280,7 @@ const Renewals = () => {
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
                       <a
-                        href={getWhatsAppLink(item)}
+                        href={getWhatsAppLink(item.phone, generateRenewalMessage(item)) || '#'}
                         target="_blank" rel="noopener noreferrer"
                         style={{
                           display: 'flex', alignItems: 'center', gap: '6px',
@@ -282,11 +288,13 @@ const Renewals = () => {
                           background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.3)',
                           color: '#25D366', fontWeight: 700, fontSize: '13px',
                           textDecoration: 'none', transition: 'all 0.2s',
-                          height: '40px'
+                          height: '40px',
+                          opacity: getWhatsAppLink(item.phone) ? 1 : 0.5,
+                          pointerEvents: getWhatsAppLink(item.phone) ? 'auto' : 'none'
                         }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,211,102,0.2)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'rgba(37,211,102,0.12)'; e.currentTarget.style.transform = ''; }}
-                        onClick={e => { if (!item.phone || item.phone.trim() === '') { e.preventDefault(); toast.error('Add a phone number first.'); } }}
+                        onClick={e => { if (!getWhatsAppLink(item.phone)) { e.preventDefault(); toast.error('Add a valid phone number first.'); } }}
                       >
                         <MessageCircle size={15} />
                         <span className="hide-mobile">WhatsApp</span>
@@ -294,11 +302,20 @@ const Renewals = () => {
                       <button
                         className="btn btn-outline"
                         style={{ gap: '6px', height: '40px' }}
+                        onClick={() => setSelectedPaymentMember(item)}
+                        disabled={balance <= 0}
+                      >
+                        <DollarSign size={15} />
+                        <span className="hide-mobile">Pay</span>
+                      </button>
+                      <button
+                        className="btn btn-outline"
+                        style={{ gap: '6px', height: '40px' }}
                         onClick={() => handleRenew(item)}
                         disabled={loadingId === item.id}
                       >
                         <RefreshCw size={15} className={loadingId === item.id ? 'spin' : ''} />
-                        <span className="hide-mobile">{loadingId === item.id ? 'Updating…' : 'Mark Renewed'}</span>
+                        <span className="hide-mobile">{loadingId === item.id ? 'Updating…' : 'Extend'}</span>
                       </button>
                     </div>
                   </div>
@@ -308,6 +325,15 @@ const Renewals = () => {
           )}
         </div>
       </div>
+      
+      <PaymentModal 
+        isOpen={!!selectedPaymentMember} 
+        onClose={() => setSelectedPaymentMember(null)} 
+        member={selectedPaymentMember} 
+        onPaymentSuccess={(paymentRecord, updatedMember) => {
+          // Success handled in modal, optionally trigger PDF generation here
+        }}
+      />
     </div>
   );
 };

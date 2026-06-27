@@ -27,12 +27,19 @@ import Trainers from './pages/Trainers';
 import Workouts from './pages/Workouts';
 import Onboarding from './pages/Onboarding';
 import Queries from './pages/Queries';
+import Expenses from './pages/Expenses';
+import Tickets from './pages/Tickets';
 
 import './App.css';
 
-const ProtectedRoute = ({ children }) => {
-  const { currentUser } = useAuth();
+const ProtectedRoute = ({ children, allowedFeature }) => {
+  const { currentUser, hasPermission } = useAuth();
   if (!currentUser) return <Navigate to="/login" />;
+  
+  if (allowedFeature && !hasPermission(allowedFeature)) {
+    return <Navigate to="/dashboard" />;
+  }
+
   // Wrap protected children in MainLayout
   return <MainLayout>{children}</MainLayout>;
 };
@@ -51,22 +58,24 @@ const AppRoutes = () => {
       <Route path="/checkin/:gymId" element={<CheckIn />} />
 
       {/* Owner protected routes - wrapped by ProtectedRoute which adds MainLayout */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/add-member" element={<ProtectedRoute><AddMember /></ProtectedRoute>} />
-      <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute allowedFeature="dashboard"><Dashboard /></ProtectedRoute>} />
+      <Route path="/add-member" element={<ProtectedRoute allowedFeature="members"><AddMember /></ProtectedRoute>} />
+      <Route path="/members" element={<ProtectedRoute allowedFeature="members"><Members /></ProtectedRoute>} />
       
       {/* New Pages */}
-      <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
-      <Route path="/assessments" element={<ProtectedRoute><AssessmentsList /></ProtectedRoute>} />
-      <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-      <Route path="/renewals" element={<ProtectedRoute><Renewals /></ProtectedRoute>} />
-      <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
-      <Route path="/trainers" element={<ProtectedRoute><Trainers /></ProtectedRoute>} />
-      <Route path="/workouts" element={<ProtectedRoute><Workouts /></ProtectedRoute>} />
-      <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-      <Route path="/queries" element={<ProtectedRoute><Queries /></ProtectedRoute>} />
+      <Route path="/attendance" element={<ProtectedRoute allowedFeature="attendance"><Attendance /></ProtectedRoute>} />
+      <Route path="/assessments" element={<ProtectedRoute allowedFeature="assessments"><AssessmentsList /></ProtectedRoute>} />
+      <Route path="/assessment" element={<ProtectedRoute allowedFeature="assessments"><Assessment /></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute allowedFeature="reports"><Reports /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute allowedFeature="settings"><Settings /></ProtectedRoute>} />
+      <Route path="/renewals" element={<ProtectedRoute allowedFeature="renewals"><Renewals /></ProtectedRoute>} />
+      <Route path="/leads" element={<ProtectedRoute allowedFeature="leads"><Leads /></ProtectedRoute>} />
+      <Route path="/trainers" element={<ProtectedRoute allowedFeature="trainers"><Trainers /></ProtectedRoute>} />
+      <Route path="/workouts" element={<ProtectedRoute allowedFeature="workouts"><Workouts /></ProtectedRoute>} />
+      <Route path="/onboarding" element={<ProtectedRoute allowedFeature="settings"><Onboarding /></ProtectedRoute>} />
+      <Route path="/queries" element={<ProtectedRoute allowedFeature="queries"><Queries /></ProtectedRoute>} />
+      <Route path="/expenses" element={<ProtectedRoute allowedFeature="expenses"><Expenses /></ProtectedRoute>} />
+      <Route path="/tickets" element={<ProtectedRoute allowedFeature="tickets"><Tickets /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" />} />

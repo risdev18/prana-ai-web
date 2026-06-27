@@ -217,6 +217,23 @@ export const subscribeToTransactions = (gymId, callback) => {
   });
 };
 
+// ─── AUDIT LOGS ───
+
+export const logAudit = async (gymId, userId, action, details) => {
+  try {
+    const auditRef = doc(collection(db, 'Gyms', gymId, 'AuditLogs'));
+    await setDoc(auditRef, {
+      id: auditRef.id,
+      userId,
+      action,
+      details,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Failed to write audit log:', err);
+  }
+};
+
 // ─── STAFF MANAGEMENT ───
 
 export const addStaff = async (gymId, staff) => {

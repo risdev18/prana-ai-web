@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Search, Plus, UserCheck, Clock, UserX,
-  MessageCircle, RefreshCw, Phone, X, ChevronRight, Upload
+  MessageCircle, RefreshCw, Phone, X, ChevronRight, Upload, Download
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToMembers, subscribeToEnquiries, getMemberStatus } from '../services/firestoreService';
+import { exportCurrentViewToExcel } from '../utils/exportUtils';
 import MemberProfileModal from '../components/MemberProfileModal';
 import ImportMembersModal from '../components/ImportMembersModal';
 
@@ -18,6 +19,8 @@ const Members = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedMember, setSelectedMember] = useState(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     if (!currentUser) return;
@@ -54,6 +57,16 @@ const Members = () => {
       (item.shortId || '').toLowerCase().includes(s)
     );
   }
+
+  // Pagination logic
+  const totalPages = Math.ceil(display.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedDisplay = display.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset page when tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, search]);
 
   const getStatusColor = (status) => {
     if (status === 'Active') return { text: 'var(--success)', bg: 'var(--success-bg)', border: 'var(--success-border)' };
@@ -93,6 +106,20 @@ const Members = () => {
     return `https://wa.me/${fp}?text=${encodeURIComponent(text)}`;
   };
 
+  const handleExportView = () => {
+    const dataToExport = display.map(m => ({
+      'Member ID': m.shortId || '',
+      'Name': m.memberName || m.name || '',
+      'Phone': m.phone || '',
+      'Status': m.status || '',
+      'Fee': m.membershipFee || 0,
+      'Paid': m.amountPaid || 0,
+      'Balance': (m.membershipFee || 0) - (m.amountPaid || 0),
+      'End Date': m.membershipEndDate || ''
+    }));
+    exportCurrentViewToExcel(dataToExport, `${gymData?.gymName || 'Gym'}_Members_${activeTab}`);
+  };
+
   return (
     <div className="page" style={{ paddingBottom: '100px' }}>
       {/* Header */}
@@ -105,11 +132,18 @@ const Members = () => {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
+            onClick={handleExportView}
+            className="btn btn-outline"
+            style={{ height: '40px', padding: '0 16px', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Download size={15} /> Export
+          </button>
+          <button
             onClick={() => setIsImportOpen(true)}
             className="btn btn-outline"
             style={{ height: '40px', padding: '0 16px', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            <Upload size={15} /> Import Excel
+            <Upload size={15} /> Import
           </button>
           <button
             onClick={() => navigate('/add-member')}
@@ -233,7 +267,7 @@ const Members = () => {
 
           {/* Rows List */}
           <div style={{ background: 'rgba(10, 8, 30, 0.15)' }}>
-            {display.map(item => {
+            {paginatedDisplay.map(item => {
               const isLead = activeTab === 'leads';
               const bal = isLead ? 0 : (item.membershipFee || 0) - (item.amountPaid || 0);
               const sc = getStatusColor(item.status);
@@ -385,6 +419,39 @@ const Members = () => {
               );
             })}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'rgba(20, 16, 50, 0.65)'
+            }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, display.length)} of {display.length} entries
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="btn btn-outline" 
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                  style={{ padding: '6px 12px', height: '32px', fontSize: '12px' }}
+                >
+                  Previous
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '32px', fontSize: '13px', fontWeight: 600 }}>
+                  {currentPage} / {totalPages}
+                </div>
+                <button 
+                  className="btn btn-outline" 
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  style={{ padding: '6px 12px', height: '32px', fontSize: '12px' }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

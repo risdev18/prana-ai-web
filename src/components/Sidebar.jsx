@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarCheck, RefreshCw, Dumbbell,
   Settings, LogOut, Zap, UserPlus, ClipboardList, Activity,
-  MessageSquare, ChevronRight
+  MessageSquare, ChevronRight, DollarSign, ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { downloadGymBackupExcel } from '../utils/exportUtils';
@@ -78,7 +78,7 @@ const NavSection = ({ label, children }) => (
 );
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { logout, gymData } = useAuth();
+  const { logout, gymData, hasPermission } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -139,22 +139,24 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Navigation List */}
       <nav style={{ flex: 1, padding: '20px 10px', overflowY: 'auto' }}>
         <NavSection label="Operations">
-          <NavItem to="/dashboard"  icon={LayoutDashboard} label="Dashboard" onClick={onClose} />
-          <NavItem to="/members"    icon={Users}           label="Members" onClick={onClose} />
-          <NavItem to="/renewals"   icon={RefreshCw}       label="Renewals" onClick={onClose} />
-          <NavItem to="/attendance" icon={CalendarCheck}   label="Attendance" onClick={onClose} />
-          <NavItem to="/leads"      icon={UserPlus}        label="Leads" onClick={onClose} />
-          <NavItem to="/queries"    icon={MessageSquare}   label="Queries" onClick={onClose} />
+          {hasPermission('dashboard') && <NavItem to="/dashboard"  icon={LayoutDashboard} label="Dashboard" onClick={onClose} />}
+          {hasPermission('members') && <NavItem to="/members"    icon={Users}           label="Members" onClick={onClose} />}
+          {hasPermission('renewals') && <NavItem to="/renewals"   icon={RefreshCw}       label="Renewals" onClick={onClose} />}
+          {hasPermission('attendance') && <NavItem to="/attendance" icon={CalendarCheck}   label="Attendance" onClick={onClose} />}
+          {hasPermission('leads') && <NavItem to="/leads"      icon={UserPlus}        label="Leads" onClick={onClose} />}
+          {hasPermission('queries') && <NavItem to="/queries"    icon={MessageSquare}   label="Queries" onClick={onClose} />}
         </NavSection>
 
         <NavSection label="Fitness Core">
-          <NavItem to="/workouts"    icon={ClipboardList} label="Workouts" onClick={onClose} />
-          <NavItem to="/assessments" icon={Activity}      label="Assessments" onClick={onClose} />
+          {hasPermission('workouts') && <NavItem to="/workouts"    icon={ClipboardList} label="Workouts" onClick={onClose} />}
+          {hasPermission('assessments') && <NavItem to="/assessments" icon={Activity}      label="Assessments" onClick={onClose} />}
         </NavSection>
 
         <NavSection label="Management">
-          <NavItem to="/trainers" icon={Dumbbell} label="Trainers" onClick={onClose} />
-          <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} />
+          {hasPermission('expenses') && <NavItem to="/expenses" icon={DollarSign} label="Expenses" onClick={onClose} />}
+          {hasPermission('tickets') && <NavItem to="/tickets" icon={ShieldAlert} label="Tickets" onClick={onClose} />}
+          {hasPermission('trainers') && <NavItem to="/trainers" icon={Dumbbell} label="Trainers" onClick={onClose} />}
+          {hasPermission('settings') && <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} />}
         </NavSection>
       </nav>
 

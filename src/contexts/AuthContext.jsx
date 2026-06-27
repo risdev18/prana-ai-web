@@ -3,6 +3,23 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { getGymData, logoutGym } from '../services/authService';
 
+const PERMISSIONS = {
+  owner: [
+    'dashboard', 'members', 'renewals', 'attendance', 'leads', 'queries',
+    'workouts', 'assessments', 'trainers', 'settings', 'expenses', 'tickets', 'reports'
+  ],
+  manager: [
+    'dashboard', 'members', 'renewals', 'attendance', 'leads', 'queries',
+    'workouts', 'assessments', 'trainers', 'tickets'
+  ],
+  trainer: [
+    'members', 'workouts', 'assessments', 'attendance'
+  ],
+  frontdesk: [
+    'dashboard', 'members', 'renewals', 'attendance', 'leads', 'queries'
+  ]
+};
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -65,11 +82,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const hasPermission = (feature) => {
+    if (!gymData) return false;
+    // Fallback to 'owner' if no role is defined (for backward compatibility)
+    const role = gymData.role || 'owner';
+    const userPermissions = PERMISSIONS[role.toLowerCase()] || [];
+    return userPermissions.includes(feature);
+  };
+
   const value = {
     currentUser,
     gymData,
     logout: logoutGym,
     refreshGymData,
+    hasPermission,
+    userRole: gymData?.role || 'owner'
   };
 
 

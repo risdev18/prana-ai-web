@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { updateGymProfile, deleteAllMembers, getMembersByGymId } from '../services/firestoreService';
 import { downloadGymBackupExcel } from '../utils/exportUtils';
+import ConfirmModal from '../components/ConfirmModal';
 
 
 const ToggleSwitch = ({ value, onChange }) => (

@@ -34,9 +34,55 @@ export const downloadGymBackupExcel = async (gymId, gymName) => {
     const fileName = `${safeGymName}_AutoBackup_${new Date().toISOString().split('T')[0]}.xlsx`;
     
     XLSX.writeFile(workbook, fileName);
+    
+    // Also sync to Google Sheets silently
+    syncToGoogleSheets(excelData).catch(e => console.warn('Google Sheets Sync Failed:', e));
+    
     return true;
   } catch (err) {
     console.error('Auto Export Error:', err);
+    return false;
+  }
+};
+
+export const exportCurrentViewToExcel = (dataArray, fileName) => {
+  if (!dataArray || dataArray.length === 0) {
+    toast.error('No data to export in the current view.');
+    return false;
+  }
+  
+  try {
+    const worksheet = XLSX.utils.json_to_sheet(dataArray);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
+    
+    XLSX.writeFile(workbook, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success('Export downloaded successfully!');
+    return true;
+  } catch (err) {
+    console.error('Export View Error:', err);
+    toast.error('Failed to export data.');
+    return false;
+  }
+};
+
+export const syncToGoogleSheets = async (excelData) => {
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysn28CFH1wkMS64HECpoKS55J-gLnHABxN6b3WLH41zNmhNT7FYlXL2nxuHeuccfemBA/exec';
+  
+  try {
+    // Send data to Google Apps Script Web App
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Essential for calling Google Scripts from browser without CORS errors
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(excelData)
+    });
+    console.log('Successfully synced to Google Sheets (no-cors mode)');
+    return true;
+  } catch (error) {
+    console.error('Error syncing to Google Sheets:', error);
     return false;
   }
 };
