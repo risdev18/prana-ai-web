@@ -36,8 +36,8 @@ import './App.css';
 const ProtectedRoute = ({ children, allowedFeature }) => {
   const { currentUser, gymData, loading, hasPermission } = useAuth();
 
-  // Still loading auth/gymData — show a fullscreen spinner
-  if (loading || (currentUser && !gymData)) {
+  // Show spinner ONLY while auth is initializing
+  if (loading) {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
@@ -56,40 +56,53 @@ const ProtectedRoute = ({ children, allowedFeature }) => {
     );
   }
 
+  // Not logged in at all
   if (!currentUser) return <Navigate to="/login" />;
   
-  // If gymData has loaded and status is pending, block access
+  // Logged in but pending approval
   if (gymData && gymData.status === 'pending') {
     return <Navigate to="/pending-approval" />;
   }
 
-  // If gymData is still null after loading completed — something went wrong
+  // Logged in but gym document missing — show setup/repair page
   if (!gymData) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', color: '#fff', padding: '40px', textAlign: 'center' }}>
-        <h2 style={{ marginBottom: '12px' }}>Setup Incomplete</h2>
-        <p style={{ color: 'var(--text-3)', marginBottom: '24px', maxWidth: '400px' }}>
-          Your account data could not be loaded. This can happen if registration was interrupted.
+        <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(255,171,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto', fontSize: '32px' }}>⚙️</div>
+        <h2 style={{ marginBottom: '12px' }}>Account Setup Needed</h2>
+        <p style={{ color: 'var(--text-3)', marginBottom: '8px', maxWidth: '420px' }}>
+          Signed in as <strong style={{ color: '#fff' }}>{currentUser.email}</strong>
         </p>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--text-3)', marginBottom: '28px', maxWidth: '420px' }}>
+          Your account exists but database setup is incomplete. Click below to complete it automatically.
+        </p>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button className="btn btn-primary" onClick={async () => {
-            if (currentUser?.email === 'anshu@admin.com') {
-              try {
-                const { doc, setDoc } = await import('firebase/firestore');
-                const { db } = await import('./services/firebase');
-                await setDoc(doc(db, 'Gyms', currentUser.uid), {
-                  gymId: currentUser.uid, gymName: 'Super Admin', ownerName: 'Anshu',
-                  email: currentUser.email, role: 'superadmin', status: 'active', createdAt: new Date().toISOString()
-                });
-                await setDoc(doc(db, 'GlobalSettings', 'appSettings'), {
-                  websiteName: 'Prana AI', supportEmail: currentUser.email, supportPhone: 'Not Set', supportIdImage: ''
-                });
+            try {
+              const { doc, setDoc, getDoc } = await import('firebase/firestore');
+              const { db } = await import('./services/firebase');
+              const isSuperAdmin = currentUser.email === 'anshu@admin.com';
+              await setDoc(doc(db, 'Gyms', currentUser.uid), {
+                gymId: currentUser.uid,
+                gymName: isSuperAdmin ? 'Super Admin' : 'My Gym',
+                ownerName: isSuperAdmin ? 'Anshu' : currentUser.email,
+                email: currentUser.email,
+                role: isSuperAdmin ? 'superadmin' : 'owner',
+                status: isSuperAdmin ? 'active' : 'pending',
+                createdAt: new Date().toISOString()
+              });
+              if (isSuperAdmin) {
+                const settingsRef = doc(db, 'GlobalSettings', 'appSettings');
+                const snap = await getDoc(settingsRef);
+                if (!snap.exists()) {
+                  await setDoc(settingsRef, { websiteName: 'Prana AI', supportEmail: currentUser.email, supportPhone: 'Not Set', supportIdImage: '' });
+                }
                 window.location.href = '/superadmin';
-              } catch (e) {
-                alert('Setup failed: ' + e.message);
+              } else {
+                window.location.href = '/pending-approval';
               }
-            } else {
-              window.location.href = '/login';
+            } catch (e) {
+              alert('Setup failed: ' + e.message);
             }
           }}>Complete Setup</button>
           <button className="btn btn-outline" onClick={() => window.location.href = '/login'}>Go to Login</button>
@@ -97,7 +110,7 @@ const ProtectedRoute = ({ children, allowedFeature }) => {
       </div>
     );
   }
-  
+
   if (allowedFeature && !hasPermission(allowedFeature)) {
     if (gymData?.role === 'superadmin') return <Navigate to="/superadmin" />;
     return <Navigate to="/dashboard" />;
