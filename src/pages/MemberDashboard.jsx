@@ -170,6 +170,24 @@ const MemberDashboard = () => {
     }
   };
 
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return alert('Photo must be less than 2MB. Please choose a smaller image.');
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const newMemberData = { ...member, photoUrl: reader.result };
+        await updateMember(gym.gymId, newMemberData);
+        navigate('/member-dashboard', { state: { member: newMemberData, gym }, replace: true });
+      } catch (err) {
+        console.error('Error uploading photo', err);
+        alert('Failed to save photo');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const getBmiColor = (bmi) => {
     if (!bmi) return '#6366f1';
     if (bmi < 18.5) return '#06b6d4';
@@ -253,142 +271,143 @@ const MemberDashboard = () => {
   return (
     <div style={{ minHeight: '100vh', padding: '0 20px 60px', position: 'relative', overflow: 'hidden' }}>
 
-      {/* MEMBERSHIP CARD MODAL */}
+      {/* ─── DIGITAL MEMBER ID CARD (WALLET STYLE) ─── */}
       {showCard && (
         <div
           onClick={() => setShowCard(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 200,
-            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px'
+            padding: '20px', perspective: '1000px'
           }}
         >
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              width: '100%', maxWidth: '380px',
-              background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1040 50%, #0f1f0f 100%)',
-              border: '1px solid rgba(99,102,241,0.5)',
-              borderRadius: '28px', overflow: 'hidden',
-              boxShadow: '0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(99,102,241,0.2)'
+              width: '100%', maxWidth: '360px',
+              background: 'linear-gradient(145deg, #1f1f2e, #0d0d1a)',
+              borderRadius: '32px', overflow: 'hidden',
+              boxShadow: '0 40px 100px rgba(0,0,0,0.8), inset 0 2px 2px rgba(255,255,255,0.1)',
+              position: 'relative', border: '1px solid rgba(255,255,255,0.05)',
+              animation: 'flip-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
             }}
           >
-            {/* Card Header */}
+            {/* Glossy overlay for Apple Wallet effect */}
             <div style={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06d6a0 100%)',
-              padding: '24px 28px 20px',
-              position: 'relative', overflow: 'hidden'
+              position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%)',
+              pointerEvents: 'none', zIndex: 10
+            }} />
+
+            {/* Header: Gym Brand */}
+            <div style={{
+              padding: '24px 24px 16px', display: 'flex', alignItems: 'center', gap: '12px',
+              borderBottom: '1px solid rgba(255,255,255,0.05)'
             }}>
               <div style={{
-                position: 'absolute', top: '-30px', right: '-30px',
-                width: '100px', height: '100px', borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)'
-              }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase' }}>PRANA AI</div>
-                  <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>FITNESS MEMBERSHIP</div>
-                </div>
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '10px',
-                  background: 'rgba(255,255,255,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.3rem'
-                }}>🏋️</div>
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #7C5CFF, #5DA9FF)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(124,92,255,0.3)', flexShrink: 0
+              }}>
+                <Dumbbell size={22} color="#fff" />
               </div>
-              <div style={{ marginTop: '16px' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff', fontFamily: 'var(--font-head)', lineHeight: 1.2 }}>
-                  {member.memberName}
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', fontFamily: 'var(--font-head)', letterSpacing: '0.02em', lineHeight: 1.1 }}>
                   {gym?.gymName}
                 </div>
-                {member.shortId && (
-                  <div style={{ 
-                    display: 'inline-block', marginTop: '8px', padding: '4px 8px', 
-                    background: 'rgba(255,255,255,0.1)', borderRadius: '6px', 
-                    fontSize: '0.75rem', fontWeight: 800, color: '#06d6a0', letterSpacing: '1px' 
-                  }}>
-                    ID: {member.shortId}
-                  </div>
-                )}
+                <div style={{ fontSize: '0.7rem', color: 'var(--primary-light)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Digital Access Pass
+                </div>
               </div>
             </div>
 
-            {/* Card Body */}
-            <div style={{ padding: '24px 28px' }}>
-              {/* Stats Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '24px' }}>
-                {[
-                  { label: 'HEIGHT', value: member.height ? `${member.height}cm` : 'N/A', color: '#06d6a0' },
-                  { label: 'WEIGHT', value: member.weight ? `${member.weight}kg` : 'N/A', color: '#6366f1' },
-                  { label: 'BMI', value: member.bmi?.toFixed(1) || 'N/A', color: bmiColor },
-                ].map(s => (
-                  <div key={s.label} style={{ textAlign: 'center', padding: '10px 6px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', border: `1px solid ${s.color}30` }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-head)' }}>{s.value}</div>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-3)', fontWeight: 700, letterSpacing: '0.1em', marginTop: '2px' }}>{s.label}</div>
-                  </div>
-                ))}
+            {/* Body: Photo & Details */}
+            <div style={{ padding: '24px', display: 'flex', gap: '20px', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
+              
+              {/* Photo Area */}
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  width: '90px', height: '90px', borderRadius: '22px',
+                  background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(124,92,255,0.5)',
+                  overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(124,92,255,0.3)', flexShrink: 0
+                }}>
+                  {member.photoUrl ? (
+                    <img src={member.photoUrl} alt="Member" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <User size={36} color="var(--text-3)" />
+                  )}
+                </div>
+                
+                {/* Upload Photo Button */}
+                <label style={{
+                  position: 'absolute', bottom: '-10px', left: '50%', transform: 'translateX(-50%)',
+                  background: '#7C5CFF', color: '#fff', borderRadius: '999px', padding: '4px 12px',
+                  fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                  boxShadow: '0 4px 10px rgba(124,92,255,0.5)', border: '1px solid rgba(255,255,255,0.2)'
+                }}>
+                  {member.photoUrl ? 'CHANGE' : 'ADD PHOTO'}
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                </label>
               </div>
 
-              {/* Goal Badge */}
+              {/* Member Info */}
+              <div style={{ flex: 1, paddingBottom: '10px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Member</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: '8px' }}>
+                  {member.memberName}
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-3)', textTransform: 'uppercase' }}>Member ID</span>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-light)', fontFamily: 'monospace' }}>
+                      {member.shortId || 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-3)', textTransform: 'uppercase' }}>Valid Thru</span>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#06d6a0' }}>
+                      {member.membershipEndDate ? new Date(member.membershipEndDate).toLocaleDateString('en-GB') : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* QR Code Section */}
+            <div style={{ padding: '24px', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
-                borderRadius: '999px', padding: '6px 14px', fontSize: '0.8rem',
-                color: 'var(--primary-light)', fontWeight: 600, marginBottom: '24px'
+                padding: '12px', background: '#fff', borderRadius: '16px',
+                border: '1px solid #eaeaea'
               }}>
-                🎯 {member.goal}
+                <QRCode
+                  value={member.memberId || 'unknown'}
+                  size={160}
+                  level="Q"
+                  fgColor="#000"
+                  bgColor="#fff"
+                  style={{ display: 'block' }}
+                />
               </div>
-
-              {/* Body Avatar in modal */}
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                <div style={{
-                  width: '100px', height: '190px',
-                  filter: `drop-shadow(0 0 16px ${bmiColor}80)`
-                }}>
-                  <BodyModel
-                    bmi={member.bmi}
-                    gender={member.gender}
-                    bmiColor={bmiColor}
-                    height={member.height}
-                    weight={member.weight}
-                  />
-                </div>
-              </div>
-
-              {/* BIG SCANNABLE QR CODE */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  background: '#ffffff', padding: '16px', borderRadius: '20px',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.4)'
-                }}>
-                  <QRCode
-                    value={qrValue}
-                    size={200}
-                    level="H"
-                    style={{ display: 'block' }}
-                  />
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center' }}>
-                  Scan to view member profile
-                </div>
+              <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '16px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Scan to Verify Member
               </div>
             </div>
 
-            {/* Close Button */}
-            <div style={{ padding: '0 28px 24px' }}>
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
               <button
                 onClick={() => setShowCard(false)}
                 style={{
-                  width: '100%', padding: '14px',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '14px', color: 'var(--text-2)', fontFamily: 'var(--font)',
-                  fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem'
+                  flex: 1, padding: '16px', background: 'none', border: 'none',
+                  color: 'var(--text)', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                  borderRight: '1px solid rgba(255,255,255,0.05)'
                 }}
               >
-                Close Card
+                Close
               </button>
             </div>
           </div>
