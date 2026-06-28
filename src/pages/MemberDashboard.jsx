@@ -271,7 +271,7 @@ const MemberDashboard = () => {
   return (
     <div style={{ minHeight: '100vh', padding: '0 20px 60px', position: 'relative', overflow: 'hidden' }}>
 
-      {/* ─── DIGITAL MEMBER ID CARD (WALLET STYLE) ─── */}
+      {/* ─── DIGITAL MEMBER ID CARD (HORIZONTAL GYM CARD) ─── */}
       {showCard && (
         <div
           onClick={() => setShowCard(false)}
@@ -279,137 +279,108 @@ const MemberDashboard = () => {
             position: 'fixed', inset: 0, zIndex: 200,
             background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px', perspective: '1000px'
+            padding: '20px'
           }}
         >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              width: '100%', maxWidth: '360px',
-              background: 'linear-gradient(145deg, #1f1f2e, #0d0d1a)',
-              borderRadius: '32px', overflow: 'hidden',
-              boxShadow: '0 40px 100px rgba(0,0,0,0.8), inset 0 2px 2px rgba(255,255,255,0.1)',
-              position: 'relative', border: '1px solid rgba(255,255,255,0.05)',
-              animation: 'flip-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-            }}
-          >
-            {/* Glossy overlay for Apple Wallet effect */}
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%)',
-              pointerEvents: 'none', zIndex: 10
-            }} />
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-            {/* Header: Gym Brand */}
+            {/* ══ MEMBERSHIP CARD — horizontal landscape credit card style ══ */}
             <div style={{
-              padding: '24px 24px 16px', display: 'flex', alignItems: 'center', gap: '12px',
-              borderBottom: '1px solid rgba(255,255,255,0.05)'
+              width: '100%', aspectRatio: '1.75 / 1', borderRadius: '20px',
+              overflow: 'hidden', position: 'relative',
+              background: 'linear-gradient(135deg, #0a0c14 0%, #0f1620 45%, #0b0e1a 100%)',
+              boxShadow: '0 30px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.06), 0 0 40px rgba(0,220,100,0.08)',
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
             }}>
-              <div style={{
-                width: '42px', height: '42px', borderRadius: '12px',
-                background: 'linear-gradient(135deg, #7C5CFF, #5DA9FF)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(124,92,255,0.3)', flexShrink: 0
-              }}>
-                <Dumbbell size={22} color="#fff" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', fontFamily: 'var(--font-head)', letterSpacing: '0.02em', lineHeight: 1.1 }}>
-                  {gym?.gymName}
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--primary-light)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  Digital Access Pass
-                </div>
-              </div>
-            </div>
 
-            {/* Body: Photo & Details */}
-            <div style={{ padding: '24px', display: 'flex', gap: '20px', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
-              
-              {/* Photo Area */}
-              <div style={{ position: 'relative' }}>
-                <div style={{
-                  width: '90px', height: '90px', borderRadius: '22px',
-                  background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(124,92,255,0.5)',
-                  overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(124,92,255,0.3)', flexShrink: 0
-                }}>
-                  {member.photoUrl ? (
-                    <img src={member.photoUrl} alt="Member" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <User size={36} color="var(--text-3)" />
-                  )}
-                </div>
-                
-                {/* Upload Photo Button */}
-                <label style={{
-                  position: 'absolute', bottom: '-10px', left: '50%', transform: 'translateX(-50%)',
-                  background: '#7C5CFF', color: '#fff', borderRadius: '999px', padding: '4px 12px',
-                  fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-                  boxShadow: '0 4px 10px rgba(124,92,255,0.5)', border: '1px solid rgba(255,255,255,0.2)'
-                }}>
-                  {member.photoUrl ? 'CHANGE' : 'ADD PHOTO'}
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
-                </label>
-              </div>
+              {/* Glossy top shine */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%)', pointerEvents: 'none' }} />
 
-              {/* Member Info */}
-              <div style={{ flex: 1, paddingBottom: '10px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Member</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: '8px' }}>
-                  {member.memberName}
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-3)', textTransform: 'uppercase' }}>Member ID</span>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-light)', fontFamily: 'monospace' }}>
-                      {member.shortId || 'N/A'}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-3)', textTransform: 'uppercase' }}>Valid Thru</span>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#06d6a0' }}>
-                      {member.membershipEndDate ? new Date(member.membershipEndDate).toLocaleDateString('en-GB') : 'N/A'}
-                    </div>
+              {/* Left green accent bar */}
+              <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '5px', background: 'linear-gradient(180deg, #00ff88 0%, #00cc55 50%, #005522 100%)', borderRadius: '20px 0 0 20px' }} />
+
+              {/* Watermark muscle silhouette */}
+              <div style={{ position: 'absolute', right: '110px', top: '50%', transform: 'translateY(-50%)', fontSize: '5rem', opacity: 0.04, lineHeight: 1, userSelect: 'none', pointerEvents: 'none' }}>💪</div>
+
+              {/* TOP ROW: Gym name left + logo right */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 0 20px' }}>
+                <div>
+                  <div style={{ fontSize: '0.5rem', color: '#00cc55', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '1px' }}>FITNESS MEMBERSHIP CARD</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fff', fontFamily: 'var(--font-head)', letterSpacing: '0.02em', lineHeight: 1 }}>
+                    {gym?.gymName || 'FITNESS GYM'}
                   </div>
                 </div>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #00cc55, #004d22)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,204,85,0.35)' }}>
+                  <Dumbbell size={18} color="#fff" />
+                </div>
               </div>
+
+              {/* MIDDLE ROW: Photo + Details + QR */}
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', padding: '8px 14px 12px 20px' }}>
+
+                {/* Photo box */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div style={{ width: '65px', height: '75px', borderRadius: '8px', border: '2px solid #00cc55', overflow: 'hidden', background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(0,204,85,0.25)' }}>
+                    {member.photoUrl ? (
+                      <img src={member.photoUrl} alt={member.memberName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <User size={26} color="rgba(255,255,255,0.25)" />
+                    )}
+                  </div>
+                  <label title="Upload photo" style={{ position: 'absolute', inset: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', opacity: 0, cursor: 'pointer', transition: 'opacity 0.2s', fontSize: '0.5rem', color: '#fff', fontWeight: 700, textAlign: 'center', letterSpacing: '0.04em' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
+                    📷<br/>CHANGE
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                  </label>
+                </div>
+
+                {/* Member details */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.42rem', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '1px' }}>MEMBER NAME</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-head)', letterSpacing: '0.01em', marginBottom: '8px', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {member.memberName}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 12px' }}>
+                    {[
+                      { label: 'MEMBER ID', value: member.shortId || 'N/A', color: '#00ff88' },
+                      { label: 'VALID THRU', value: member.membershipEndDate ? new Date(member.membershipEndDate).toLocaleDateString('en-GB') : 'N/A', color: '#fff' },
+                      { label: 'PLAN', value: member.goal || 'Standard', color: '#fff' },
+                      { label: 'SINCE', value: member.membershipStartDate ? new Date(member.membershipStartDate).toLocaleDateString('en-GB') : '—', color: '#fff' },
+                    ].map(d => (
+                      <div key={d.label}>
+                        <div style={{ fontSize: '0.38rem', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{d.label}</div>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: d.color, fontFamily: d.label === 'MEMBER ID' ? 'monospace' : 'inherit' }}>{d.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* QR Code — compact on right */}
+                <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                  <div style={{ background: '#fff', padding: '5px', borderRadius: '7px', boxShadow: '0 4px 12px rgba(0,0,0,0.6)' }}>
+                    <QRCode value={member.memberId || 'unknown'} size={66} level="Q" fgColor="#000" bgColor="#fff" style={{ display: 'block' }} />
+                  </div>
+                  <div style={{ fontSize: '0.35rem', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>SCAN TO<br/>VERIFY</div>
+                </div>
+              </div>
+
+              {/* Bottom green accent strip */}
+              <div style={{ height: '3px', background: 'linear-gradient(90deg, #00ff88 0%, #00cc55 50%, transparent 100%)' }} />
             </div>
 
-            {/* QR Code Section */}
-            <div style={{ padding: '24px', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{
-                padding: '12px', background: '#fff', borderRadius: '16px',
-                border: '1px solid #eaeaea'
-              }}>
-                <QRCode
-                  value={member.memberId || 'unknown'}
-                  size={160}
-                  level="Q"
-                  fgColor="#000"
-                  bgColor="#fff"
-                  style={{ display: 'block' }}
-                />
-              </div>
-              <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '16px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Scan to Verify Member
-              </div>
-            </div>
+            {/* Add photo prompt if no photo */}
+            {!member.photoUrl && (
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '11px', borderRadius: '12px', cursor: 'pointer', background: 'rgba(0,204,85,0.08)', border: '1px dashed rgba(0,204,85,0.35)', color: '#00cc55', fontSize: '0.82rem', fontWeight: 600 }}>
+                📷 Tap here to add your photo to the card
+                <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+              </label>
+            )}
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-              <button
-                onClick={() => setShowCard(false)}
-                style={{
-                  flex: 1, padding: '16px', background: 'none', border: 'none',
-                  color: 'var(--text)', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-                  borderRight: '1px solid rgba(255,255,255,0.05)'
-                }}
-              >
-                Close
-              </button>
-            </div>
+            {/* Close button */}
+            <button onClick={() => setShowCard(false)} style={{ width: '100%', padding: '13px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: '#fff', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font)' }}>
+              Close Card
+            </button>
           </div>
         </div>
       )}
