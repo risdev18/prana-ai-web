@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, Activity, Medal, TrendingUp, AlertTriangle, Trash2, MessageCircle, RefreshCw } from 'lucide-react';
+import { X, Activity, Medal, Trash2, MessageCircle, RefreshCw, FileText, ClipboardList } from 'lucide-react';
 import { subscribeToMemberTimeline, deleteMember, logAudit } from '../services/firestoreService';
+import { generateAssessment } from '../core/calculator';
 import ConfirmModal from './ConfirmModal';
+import ReceiptModal from './ReceiptModal';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
 const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
   const [timeline, setTimeline] = useState([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const navigate = useNavigate();
 
   const getWhatsAppReminderLink = () => {
@@ -15,15 +18,19 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
     if (!phone) return '#';
     const fp = phone.length === 10 ? `91${phone}` : phone;
     const gymName = gymData?.gymName || 'our gym';
-    const balance = (member.membershipFee || 0) - (member.amountPaid || 0);
-    let text = `Hi ${member.memberName}, this is a reminder from ${gymName}. `;
-    if (member.membershipEndDate) {
-      text += `Your membership ends on ${new Date(member.membershipEndDate).toLocaleDateString()}. `;
-    }
-    if (balance > 0) {
-      text += `You have a pending balance of ₹${balance}. `;
-    }
-    text += `Please contact us to renew. Thank you!`;
+    const dateStr = member.membershipEndDate
+      ? new Date(member.membershipEndDate).toLocaleDateString('en-GB')
+      : 'N/A';
+    const text =
+      `🏋️‍♂️ Hi ${member.memberName},\n\n` +
+      `Your membership at ${gymName} expired on ${dateStr}.\n\n` +
+      `Renew your membership today to continue enjoying:\n` +
+      `✅ Unlimited gym access\n` +
+      `✅ Member benefits and support\n` +
+      `✅ Uninterrupted fitness progress\n\n` +
+      `📞 Contact us or visit the gym to renew now.\n\n` +
+      `Thank you for being a part of the ${gymName} family!\n\n` +
+      `Team ${gymName}`;
     return `https://wa.me/${fp}?text=${encodeURIComponent(text)}`;
   };
 
@@ -108,10 +115,10 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
           </div>
 
           {/* Quick Actions inside profile */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
             <button 
               className="btn btn-primary" 
-              style={{ flex: 1, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               onClick={() => { onClose(); navigate('/renewals'); }}
             >
               <RefreshCw size={15} /> Renew
@@ -122,16 +129,45 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-outline"
-                style={{ flex: 1, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none', color: '#25D366', borderColor: '#25D366' }}
+                style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none', color: '#25D366', borderColor: '#25D366' }}
               >
                 <MessageCircle size={15} /> Remind
               </a>
             ) : (
-              <button className="btn btn-outline" style={{ flex: 1, padding: '10px' }} onClick={() => toast.error('No phone number on profile.')}>
+              <button className="btn btn-outline" style={{ padding: '10px' }} onClick={() => toast.error('No phone number on profile.')}>
                 <MessageCircle size={15} /> Remind
               </button>
             )}
+
+            {/* Print Receipt */}
+            <button
+              className="btn btn-outline"
+              style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderColor: 'rgba(99,102,241,0.4)', color: 'var(--primary-light)' }}
+              onClick={() => setIsReceiptOpen(true)}
+            >
+              <FileText size={15} /> Print Receipt
+            </button>
+
+            {/* BMI / Fitness Assessment */}
+            <button
+              className="btn btn-outline"
+              style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderColor: 'rgba(6,214,160,0.4)', color: 'var(--success)' }}
+              onClick={() => {
+                const assessment = generateAssessment(member);
+                onClose();
+                navigate('/assessment', { state: { assessment, isNew: false } });
+              }}
+            >
+              <ClipboardList size={15} /> BMI Report
+            </button>
           </div>
+
+          <ReceiptModal
+            isOpen={isReceiptOpen}
+            onClose={() => setIsReceiptOpen(false)}
+            member={member}
+            gymData={gymData}
+          />
 
           {/* Achievements (Stub) */}
           <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>

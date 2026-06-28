@@ -85,21 +85,20 @@ const MemberList = () => {
     const phone = member.phone?.replace(/\D/g, '');
     if (!phone) return '#';
     const cleanPhone = phone.length === 10 ? `91${phone}` : phone;
-    const balance = (member.membershipFee || 0) - (member.amountPaid || 0);
     const gymName = gymData?.gymName || 'our gym';
-    const status = getMemberStatus(member.membershipEndDate);
-    
-    let text = `Hi ${member.memberName}, regarding your membership at ${gymName}:\n`;
-    if (status === 'Expired') {
-      text += `⚠️ Your membership has EXPIRED on ${new Date(member.membershipEndDate).toLocaleDateString()}.\n`;
-    } else {
-      text += `📅 Your membership is active until ${new Date(member.membershipEndDate).toLocaleDateString()}.\n`;
-    }
-    
-    if (balance > 0) {
-      text += `💸 Pending Balance: ₹${balance} is due.\n`;
-    }
-    text += `Please settle dues or renew to continue check-ins. Thank you!`;
+    const dateStr = member.membershipEndDate
+      ? new Date(member.membershipEndDate).toLocaleDateString('en-GB')
+      : 'N/A';
+    const text =
+      `🏋️‍♂️ Hi ${member.memberName},\n\n` +
+      `Your membership at ${gymName} expired on ${dateStr}.\n\n` +
+      `Renew your membership today to continue enjoying:\n` +
+      `✅ Unlimited gym access\n` +
+      `✅ Member benefits and support\n` +
+      `✅ Uninterrupted fitness progress\n\n` +
+      `📞 Contact us or visit the gym to renew now.\n\n` +
+      `Thank you for being a part of the ${gymName} family!\n\n` +
+      `Team ${gymName}`;
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
   };
 
@@ -411,6 +410,7 @@ const MemberList = () => {
         <MemberProfileModal
           member={selectedMember}
           gymId={currentUser.uid}
+          gymData={gymData}
           onClose={() => setSelectedMember(null)}
         />
       )}

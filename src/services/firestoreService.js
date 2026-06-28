@@ -80,12 +80,16 @@ export const deleteMember = async (gymId, memberId) => {
 };
 
 export const subscribeToMembers = (gymId, callback) => {
-  const q = query(
-    collection(db, 'Gyms', gymId, 'Members'),
-    orderBy('createdAt', 'desc')
-  );
+  // No orderBy to avoid missing composite index — sort in-memory
+  const q = collection(db, 'Gyms', gymId, 'Members');
   return onSnapshot(q, (snapshot) => {
-    const members = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+    const members = snapshot.docs
+      .map(d => ({ ...d.data(), id: d.id }))
+      .sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return db2 - da;
+      });
     callback(members);
   });
 };
@@ -177,12 +181,16 @@ export const updateCheckOutTime = async (gymId, dateStr, memberId) => {
 };
 
 export const subscribeToAttendance = (gymId, dateStr, callback) => {
-  const q = query(
-    collection(db, 'Gyms', gymId, 'Attendance', dateStr, 'Records'),
-    orderBy('checkInTime', 'desc')
-  );
+  // No orderBy to avoid missing composite index — sort in-memory
+  const q = collection(db, 'Gyms', gymId, 'Attendance', dateStr, 'Records');
   return onSnapshot(q, (snapshot) => {
-    const records = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+    const records = snapshot.docs
+      .map(d => ({ ...d.data(), id: d.id }))
+      .sort((a, b) => {
+        const ta = a.checkInTime ? new Date(a.checkInTime).getTime() : 0;
+        const tb = b.checkInTime ? new Date(b.checkInTime).getTime() : 0;
+        return tb - ta;
+      });
     callback(records);
   });
 };
