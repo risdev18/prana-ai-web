@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginGym, resetPassword } from '../services/authService';
-import { Mail, Lock, ArrowLeft, Eye, EyeOff, Zap, Shield, Sparkles } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, Eye, EyeOff, Zap, Shield, Sparkles, Download } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -210,6 +210,21 @@ const Login = () => {
             Register your gym →
           </span>
         </p>
+
+        {/* Download Android App Button */}
+        <div style={{ textAlign: 'center', marginTop: '30px' }}>
+          <a href="/Vyronix.apk" download style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '10px 20px', borderRadius: '100px',
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+            color: 'var(--text-2)', fontSize: '13px', fontWeight: 600, textDecoration: 'none',
+            transition: 'all 0.2s ease', cursor: 'pointer'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-2)'; }}>
+            <Download size={16} /> Get the Android App
+          </a>
+        </div>
       </div>
     </div>
   );
