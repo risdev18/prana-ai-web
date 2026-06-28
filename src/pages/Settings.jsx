@@ -431,7 +431,7 @@ const Settings = () => {
               <Zap size={22} color="#fff" />
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--primary-light)' }}>Prana AI Pro</div>
+              <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--primary-light)' }}>Vyronix Pro</div>
               <div style={{ fontSize: '12px', color: 'var(--text-3)', marginTop: '2px' }}>All features unlocked • No limits on members</div>
             </div>
           </div>

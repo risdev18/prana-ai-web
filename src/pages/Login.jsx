@@ -205,7 +205,7 @@ const Login = () => {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: '24px', color: 'var(--text-3)', fontSize: '13px' }}>
-          New to Prana AI?{' '}
+          New to Vyronix?{' '}
           <span onClick={() => navigate('/register')} style={{ color: 'var(--accent)', cursor: 'pointer', fontWeight: 700 }}>
             Register your gym →
           </span>

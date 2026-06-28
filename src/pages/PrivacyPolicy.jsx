@@ -32,7 +32,7 @@ const PrivacyPolicy = () => {
         <h1 style={{ fontSize: '28px', fontWeight: 800, margin: 0 }}>Privacy Policy</h1>
       </div>
       <p style={{ color: 'var(--text-3)', fontSize: '13px', marginBottom: '40px' }}>
-        Last updated: June 2026 &nbsp;|&nbsp; Prana AI Gym Management
+        Last updated: June 2026 &nbsp;|&nbsp; Vyronix Gym Management
       </p>
 
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '32px', backdropFilter: 'blur(16px)' }}>
@@ -77,7 +77,7 @@ const PrivacyPolicy = () => {
         <Section title="9. Contact Us">
           If you have any questions about this Privacy Policy, please contact us at:
           <br /><br />
-          <strong style={{ color: '#fff' }}>Prana AI Support</strong><br />
+          <strong style={{ color: '#fff' }}>Vyronix Support</strong><br />
           For issues, contact your account administrator or reach out through the app's support channel.
         </Section>
       </div>

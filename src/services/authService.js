@@ -24,8 +24,8 @@ export const registerGym = async ({ email, password, gymName, ownerName }) => {
     // If super admin is being created, also seed GlobalSettings
     if (isSuperAdmin) {
       await setDoc(doc(db, 'GlobalSettings', 'appSettings'), {
-        websiteName: 'Prana AI',
-        supportEmail: 'support@prana-ai.com',
+        websiteName: 'Vyronix',
+        supportEmail: 'support@vyronix.com',
         supportPhone: 'Not Set',
         supportIdImage: '',
       });
@@ -67,8 +67,8 @@ export const loginGym = async ({ email, password }) => {
       const settingsSnap = await getDoc(settingsRef);
       if (!settingsSnap.exists()) {
         await setDoc(settingsRef, {
-          websiteName: 'Prana AI',
-          supportEmail: 'support@prana-ai.com',
+          websiteName: 'Vyronix',
+          supportEmail: 'support@vyronix.com',
           supportPhone: 'Not Set',
           supportIdImage: '',
         });

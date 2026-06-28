@@ -1,4 +1,4 @@
-export const APP_NAME = 'Prana AI';
+export const APP_NAME = 'Vyronix';
 export const TAGLINE = 'Track. Train. Transform.';
 export const LOGO_TEXT = 'FITTRACK';
 

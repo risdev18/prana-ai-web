@@ -314,7 +314,7 @@ const Splash = () => {
         color: 'var(--text-3)',
         fontSize: '12px'
       }}>
-        <div>© 2026 Prana AI. All rights reserved.</div>
+        <div>© 2026 Vyronix. All rights reserved.</div>
         <div style={{ display: 'flex', gap: '20px' }}>
           <button onClick={() => navigate('/privacy')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '12px' }}>Privacy Policy</button>
           <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '12px' }}>Gym Login</button>

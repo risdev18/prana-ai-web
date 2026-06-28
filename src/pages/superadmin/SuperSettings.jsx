@@ -68,7 +68,7 @@ const SuperSettings = () => {
               className="input" 
               value={settings.websiteName || ''} 
               onChange={e => setSettings({...settings, websiteName: e.target.value})} 
-              placeholder="e.g. Prana AI"
+              placeholder="e.g. Vyronix"
               required 
             />
             <p style={{ fontSize: '12px', color: 'var(--text-3)', marginTop: '6px' }}>This name will be displayed in the support section for all gyms.</p>

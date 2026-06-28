@@ -95,7 +95,7 @@ const ProtectedRoute = ({ children, allowedFeature }) => {
                 const settingsRef = doc(db, 'GlobalSettings', 'appSettings');
                 const snap = await getDoc(settingsRef);
                 if (!snap.exists()) {
-                  await setDoc(settingsRef, { websiteName: 'Prana AI', supportEmail: 'support@prana-ai.com', supportPhone: 'Not Set', supportIdImage: '' });
+                  await setDoc(settingsRef, { websiteName: 'Vyronix', supportEmail: 'support@vyronix.com', supportPhone: 'Not Set', supportIdImage: '' });
                 }
                 window.location.href = '/superadmin';
               } else {
