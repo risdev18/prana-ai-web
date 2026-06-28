@@ -45,7 +45,7 @@ service cloud.firestore {
       match /Members/{memberId} {
         allow read: if true;
         allow create, delete: if request.auth != null && request.auth.uid == gymId;
-        allow update: if request.auth != null;
+        allow update: if true;
 
         // Assessments: members can create their own, owner can edit/delete
         match /Assessments/{assessmentId} {
