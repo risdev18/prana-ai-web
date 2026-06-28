@@ -929,7 +929,6 @@ const MemberDashboard = () => {
           </form>
         </div>
       </div>
-      </div>
 
       {/* ─── MOBILE BOTTOM NAVIGATION ─── */}
       <div className="mobile-only" style={{
