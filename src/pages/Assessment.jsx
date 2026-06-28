@@ -422,7 +422,7 @@ const Assessment = () => {
                 background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
               }}>
-                PRANA AI
+                VYRONIX
               </div>
               <div style={{ color: 'var(--text-2)', fontSize: '0.85rem', marginTop: '4px' }}>
                 {gymData?.gymName || 'Fitness Assessment'} • {new Date(currentAssessment.assessmentDate || currentAssessment.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}

@@ -83,7 +83,7 @@ const Splash = () => {
           <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, #7C5CFF, #00D4FF)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(124,92,255,0.4)' }}>
             <Zap size={16} color="#fff" />
           </div>
-          PRANA AI
+          VYRONIX
         </div>
         <div className="splash-nav-buttons" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button onClick={() => navigate('/member-portal')} className="btn btn-ghost" style={{ fontSize: '12px', padding: '6px 12px', height: '36px', gap: '5px' }}><Smartphone size={13} /> Member Portal</button>

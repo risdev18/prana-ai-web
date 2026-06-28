@@ -837,7 +837,7 @@ const MemberDashboard = () => {
 
       </div>
 
-      {/* PRANA AI CHATBOT UI */}
+      {/* VYRONIX CHATBOT UI */}
       {/* Floating Button */}
       <button
         onClick={() => setChatOpen(true)}

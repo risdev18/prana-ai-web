@@ -82,7 +82,7 @@ const Login = () => {
             </div>
             <div>
               <div style={{ fontFamily: 'var(--font-head)', fontWeight: 900, fontSize: '1.5rem', background: 'linear-gradient(135deg, #fff 0%, #a18cff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                PRANA AI
+                VYRONIX
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                 Gym Management Platform

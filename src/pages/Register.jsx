@@ -63,7 +63,7 @@ const Register = () => {
             <Zap size={24} color="#fff" />
           </div>
           <h1 style={{ marginBottom: '4px' }}>Register Your Gym</h1>
-          <p className="text-muted">Set up your gym on PRANA AI in seconds</p>
+          <p className="text-muted">Set up your gym on VYRONIX in seconds</p>
         </div>
 
         <div className="card">

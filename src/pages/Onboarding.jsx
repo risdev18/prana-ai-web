@@ -18,7 +18,7 @@ const Onboarding = () => {
         <div style={{ width: 40, height: 40, background: 'var(--primary)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Zap size={24} color="#fff" />
         </div>
-        PRANA AI
+        VYRONIX
       </div>
 
       <div className="card" style={{ width: '100%', maxWidth: '500px', padding: '40px' }}>

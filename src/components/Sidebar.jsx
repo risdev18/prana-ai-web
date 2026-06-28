@@ -123,7 +123,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             color: '#fff',
             textShadow: '0 0 10px rgba(124, 92, 255, 0.1)',
           }}>
-            PRANA AI
+            VYRONIX
           </div>
           <div style={{
             fontSize: '11px', color: 'var(--text-2)',

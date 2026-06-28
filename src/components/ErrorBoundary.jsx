@@ -11,7 +11,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('PRANA AI crashed:', error, info);
+    console.error('VYRONIX crashed:', error, info);
   }
 
   render() {
