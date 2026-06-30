@@ -71,13 +71,20 @@ const ImportMembersModal = ({ isOpen, onClose, gymId }) => {
 
         // Map column indices
         const mapColumn = (keywords) => {
+          // 1. Try exact match
+          let idx = headers.findIndex(h => keywords.some(k => h === k));
+          if (idx !== -1) return idx;
+          // 2. Try word boundary match
+          idx = headers.findIndex(h => keywords.some(k => new RegExp('\\b' + k + '\\b').test(h)));
+          if (idx !== -1) return idx;
+          // 3. Fallback to includes
           return headers.findIndex(h => keywords.some(k => h.includes(k)));
         };
 
         const nameIdx = mapColumn(['name', 'member', 'client']);
         const phoneIdx = mapColumn(['phone', 'mobile', 'contact', 'number']);
-        const startIdx = mapColumn(['start', 'join', 'date']);
-        const endIdx = mapColumn(['end', 'due', 'expire', 'validity']);
+        const startIdx = mapColumn(['start', 'join', 'date', 'admission']);
+        const endIdx = mapColumn(['due date', 'expire', 'validity', 'end', 'due']);
         const amountIdx = mapColumn(['amount', 'fee', 'price', 'paid', 'total']);
         const paidIdx = mapColumn(['paid', 'received']);
 
