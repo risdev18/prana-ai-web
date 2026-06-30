@@ -31,6 +31,18 @@ const ImportMembersModal = ({ isOpen, onClose, gymId }) => {
       const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000);
       return date.toISOString().split('T')[0];
     }
+    
+    if (typeof excelDate === 'string') {
+      // Try to match DD-MM-YYYY or DD/MM/YYYY
+      const parts = excelDate.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+      if (parts) {
+        const day = parts[1].padStart(2, '0');
+        const month = parts[2].padStart(2, '0');
+        const year = parts[3];
+        return `${year}-${month}-${day}`;
+      }
+    }
+
     const parsed = new Date(excelDate);
     return isNaN(parsed) ? null : parsed.toISOString().split('T')[0];
   };
@@ -69,11 +81,21 @@ const ImportMembersModal = ({ isOpen, onClose, gymId }) => {
         const amountIdx = mapColumn(['amount', 'fee', 'price', 'paid', 'total']);
         const paidIdx = mapColumn(['paid', 'received']);
 
+        const standardIndices = [nameIdx, phoneIdx, startIdx, endIdx, amountIdx, paidIdx].filter(i => i !== -1);
+        const extraHeaders = headers.map((h, i) => (!standardIndices.includes(i) && h) ? { index: i, name: rawData[0][i] } : null).filter(Boolean);
+
         const mappedData = rows.map((row, idx) => {
           if (!row || row.length === 0) return null;
           
           const rawStart = startIdx >= 0 ? row[startIdx] : null;
           const rawEnd = endIdx >= 0 ? row[endIdx] : null;
+
+          const extraData = {};
+          extraHeaders.forEach(h => {
+             if (row[h.index] !== undefined && row[h.index] !== null && row[h.index] !== '') {
+               extraData[h.name] = row[h.index];
+             }
+          });
 
           return {
             _index: idx + 1,
@@ -83,6 +105,7 @@ const ImportMembersModal = ({ isOpen, onClose, gymId }) => {
             membershipEndDate: parseExcelDate(rawEnd) || '',
             membershipFee: amountIdx >= 0 && !isNaN(row[amountIdx]) ? Number(row[amountIdx]) : 0,
             amountPaid: paidIdx >= 0 && !isNaN(row[paidIdx]) ? Number(row[paidIdx]) : (amountIdx >= 0 && !isNaN(row[amountIdx]) ? Number(row[amountIdx]) : 0),
+            extraData: Object.keys(extraData).length > 0 ? extraData : null
           };
         }).filter(item => item && item.memberName); // Only keep rows with at least a name
 
@@ -117,6 +140,7 @@ const ImportMembersModal = ({ isOpen, onClose, gymId }) => {
           membershipEndDate: data.membershipEndDate,
           membershipFee: data.membershipFee,
           amountPaid: data.amountPaid,
+          extraData: data.extraData || null,
           createdAt: now,
           status: 'Active',
           goal: 'General Fitness',

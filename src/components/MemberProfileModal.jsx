@@ -114,6 +114,22 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
             </div>
           </div>
 
+          {member.extraData && Object.keys(member.extraData).length > 0 && (
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ClipboardList size={18} color="var(--primary-light)" /> Additional Info
+              </h3>
+              <div className="grid-2" style={{ gap: '12px' }}>
+                {Object.entries(member.extraData).map(([key, value]) => (
+                  <div key={key} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>{key}</div>
+                    <div style={{ fontSize: '0.95rem', color: 'var(--text-1)', wordBreak: 'break-word' }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Quick Actions inside profile */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
             <button 
