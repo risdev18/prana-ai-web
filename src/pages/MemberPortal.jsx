@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, ArrowLeft, Building2, ChevronRight, AlertCircle, Lock, Zap, CheckCircle } from 'lucide-react';
+import { Users, Search, ArrowLeft, Building2, ChevronRight, AlertCircle, Lock, Zap, CheckCircle, Phone } from 'lucide-react';
 import { findGymByName, getMembersByGymId, updateMember } from '../services/firestoreService';
 
 const StepIndicator = ({ step, total }) => (
@@ -42,6 +42,7 @@ const MemberPortal = () => {
   const [authMember, setAuthMember] = useState(null);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [verifyPhoneInput, setVerifyPhoneInput] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
   const currentStep = !selectedGym ? 1 : !authMember ? 2 : 3;
@@ -82,17 +83,34 @@ const MemberPortal = () => {
   const handleSelectMember = (member) => {
     setAuthMember(member);
     setPinInput('');
+    setVerifyPhoneInput('');
     setPinError('');
   };
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setPinError('');
+
+    if (!authMember.password) {
+      const expectedPhone = (authMember.phone || '').replace(/\D/g, '');
+      const inputPhone = verifyPhoneInput.replace(/\D/g, '');
+      if (expectedPhone && inputPhone !== expectedPhone) {
+        return setPinError('The phone number entered does not match our records.');
+      }
+      if (!expectedPhone && inputPhone.length < 10) {
+        return setPinError('Please enter a valid 10-digit phone number.');
+      }
+    }
+
     if (pinInput.length < 4) return setPinError('Password must be at least 4 characters');
     setAuthLoading(true);
     try {
       if (!authMember.password) {
         const updatedMember = { ...authMember, password: pinInput };
+        // Save the phone number if they didn't have one
+        if (!authMember.phone) {
+            updatedMember.phone = verifyPhoneInput;
+        }
         await updateMember(selectedGym.gymId, updatedMember);
         navigate('/member-dashboard', { state: { member: updatedMember, gym: selectedGym } });
       } else {
@@ -224,7 +242,6 @@ const MemberPortal = () => {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '14px' }}>{gym.gymName}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>Owner: {gym.ownerName}</div>
                       </div>
                       <ChevronRight size={18} color="var(--primary-light)" />
                     </div>
@@ -338,6 +355,21 @@ const MemberPortal = () => {
                   )}
 
                   <form onSubmit={handleAuthSubmit}>
+                    {!authMember.password && (
+                      <div className="form-group">
+                        <label>Verify Registered Phone Number</label>
+                        <div style={{ position: 'relative' }}>
+                          <Phone size={17} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
+                          <input
+                            type="tel" className="form-control"
+                            placeholder="Enter your 10-digit phone number"
+                            style={{ paddingLeft: '44px', marginBottom: '16px' }}
+                            value={verifyPhoneInput} onChange={e => setVerifyPhoneInput(e.target.value)} required
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                    )}
                     <div className="form-group">
                       <label>{authMember.password ? 'Your Password' : 'Create a Password'}</label>
                       <div style={{ position: 'relative' }}>
@@ -347,7 +379,7 @@ const MemberPortal = () => {
                           placeholder={authMember.password ? 'Enter your password' : 'Create a password (min 4 chars)'}
                           style={{ paddingLeft: '44px' }}
                           value={pinInput} onChange={e => setPinInput(e.target.value)} required
-                          autoFocus
+                          autoFocus={!!authMember.password}
                         />
                       </div>
                     </div>
@@ -373,6 +405,13 @@ const MemberPortal = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Powered By Watermark */}
+        <div style={{ textAlign: 'center', marginTop: '24px', opacity: 0.6 }}>
+          <p style={{ fontSize: '11px', color: 'var(--text-3)', letterSpacing: '0.05em' }}>
+            Powered by <strong style={{ color: 'var(--primary-light)' }}>SaffarLabs Mitra</strong>
+          </p>
         </div>
       </div>
     </div>

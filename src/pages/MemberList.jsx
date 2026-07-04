@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Search, FileText, Trash2, UserPlus, Filter, KeyRound, MessageCircle, DollarSign, Calendar, Activity, Users } from 'lucide-react';
+import { ChevronLeft, Search, FileText, Trash2, UserPlus, Filter, KeyRound, MessageCircle, DollarSign, Calendar, Activity, Users, Download, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeToMembers, deleteMember, updateMember } from '../services/firestoreService';
 import { generateAssessment } from '../core/calculator';
 import MemberProfileModal from '../components/MemberProfileModal';
 import ImportMembersModal from '../components/ImportMembersModal';
-import { Upload } from 'lucide-react';
 
 
 const MemberList = () => {
@@ -113,6 +112,40 @@ const MemberList = () => {
     return matchSearch && matchGoal;
   });
 
+  const handleExportCSV = () => {
+    if (members.length === 0) return alert('No members to export');
+
+    const headers = ['Name', 'ID', 'Phone', 'Membership Plan', 'Start Date', 'Expiry Date', 'Amount Paid', 'Membership Fee', 'Balance'];
+    const rows = members.map(m => {
+      const balance = (m.membershipFee || 0) - (m.amountPaid || 0);
+      return [
+        m.memberName || '',
+        m.shortId || '',
+        m.phone || '',
+        m.membershipPlan || '',
+        m.membershipStartDate || '',
+        m.membershipEndDate || '',
+        m.amountPaid || 0,
+        m.membershipFee || 0,
+        balance
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${gymData?.gymName || 'Gym'}_Members_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div style={{ minHeight: '100vh', padding: '0 20px 60px', position: 'relative', overflow: 'hidden' }}>
       {/* Subtle background overlay */}
@@ -158,6 +191,17 @@ const MemberList = () => {
             </p>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
+            <button
+              onClick={handleExportCSV}
+              className="btn btn-outline"
+              style={{
+                height: '40px',
+                padding: '0 16px',
+                borderRadius: 'var(--radius-sm)'
+              }}
+            >
+              <Download size={15} /> Export CSV
+            </button>
             <button
               onClick={() => setIsImportOpen(true)}
               className="btn btn-outline"

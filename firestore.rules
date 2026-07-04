@@ -18,7 +18,7 @@ service cloud.firestore {
     // ─── GLOBAL SETTINGS ───
     match /GlobalSettings/{document=**} {
       allow read: if true;
-      allow write: if true; // Temporarily allow for setup
+      allow write: if isSuperAdmin(); // Locked down for production
     }
 
     // ─── GLOBAL TICKETS (Complaints to Super Admin) ───
@@ -45,7 +45,10 @@ service cloud.firestore {
       match /Members/{memberId} {
         allow read: if true;
         allow create, delete: if request.auth != null && request.auth.uid == gymId;
-        allow update: if true;
+        // Gym owners can update everything.
+        // Members (unauthenticated) can ONLY update their password and phone during onboarding.
+        allow update: if (request.auth != null && request.auth.uid == gymId) ||
+                         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['password', 'phone']));
 
         // Assessments: members can create their own, owner can edit/delete
         match /Assessments/{assessmentId} {

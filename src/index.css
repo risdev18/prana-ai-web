@@ -1192,3 +1192,14 @@ textarea.form-control {
     font-size: 13px;
   }
 }
+@media (max-width: 768px) {
+  .page {
+    padding: var(--space-4) var(--space-4) 100px;
+  }
+  .card, .stat-card {
+    padding: var(--space-4);
+  }
+  .topbar {
+    padding: 0 var(--space-4);
+  }
+}

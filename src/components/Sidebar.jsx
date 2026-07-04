@@ -200,6 +200,13 @@ const Sidebar = ({ isOpen, onClose }) => {
           <LogOut size={15} />
           Sign Out
         </button>
+
+        {/* Powered By Watermark */}
+        <div style={{ textAlign: 'center', marginTop: '16px', opacity: 0.6 }}>
+          <p style={{ fontSize: '10px', color: 'var(--text-3)', letterSpacing: '0.05em', margin: 0 }}>
+            Powered by <strong style={{ color: 'var(--primary-light)' }}>SaffarLabs Mitra</strong>
+          </p>
+        </div>
       </div>
     </div>
   );

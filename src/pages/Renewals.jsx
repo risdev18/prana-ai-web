@@ -12,6 +12,11 @@ const Renewals = () => {
   const [loadingId, setLoadingId] = useState(null);
   const [selectedPaymentMember, setSelectedPaymentMember] = useState(null);
 
+  // Queue state for sending all reminders
+  const [sendingQueue, setSendingQueue] = useState([]);
+  const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
+  const [isSendingQueueOpen, setIsSendingQueueOpen] = useState(false);
+
   useEffect(() => {
     if (currentUser) {
       const unsub = subscribeToMembers(currentUser.uid, setMembers);
@@ -57,15 +62,28 @@ const Renewals = () => {
       toast.error('No members with valid phone numbers.');
       return;
     }
-    if (!window.confirm(`This will attempt to open WhatsApp for ${validMembers.length} members.\n\nPlease note: Your browser might block multiple pop-ups. If so, please allow pop-ups for this site or send messages individually.\n\nProceed?`)) return;
     
-    validMembers.forEach((member, index) => {
-      // Small delay to help with browser pop-up blocking
-      setTimeout(() => {
-        const link = getWhatsAppLink(member.phone, generateRenewalMessage(member));
-        if (link) window.open(link, '_blank');
-      }, index * 800);
-    });
+    setSendingQueue(validMembers);
+    setCurrentQueueIndex(0);
+    setIsSendingQueueOpen(true);
+  };
+
+  const handleSendNextInQueue = () => {
+    if (currentQueueIndex >= sendingQueue.length) {
+      setIsSendingQueueOpen(false);
+      return;
+    }
+    
+    const member = sendingQueue[currentQueueIndex];
+    const link = getWhatsAppLink(member.phone, generateRenewalMessage(member));
+    if (link) window.open(link, '_blank');
+    
+    if (currentQueueIndex === sendingQueue.length - 1) {
+      setIsSendingQueueOpen(false);
+      toast.success('All reminders processed!');
+    } else {
+      setCurrentQueueIndex(prev => prev + 1);
+    }
   };
 
   const handleRenew = async (member) => {
@@ -328,6 +346,31 @@ const Renewals = () => {
           // Success handled in modal, optionally trigger PDF generation here
         }}
       />
+
+      {/* Sending Queue Modal */}
+      {isSendingQueueOpen && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal-panel" style={{ padding: '24px', maxWidth: '400px', textAlign: 'center' }}>
+            <MessageCircle size={48} color="#25D366" style={{ marginBottom: '16px' }} />
+            <h3>Sending Reminders</h3>
+            <p style={{ margin: '16px 0' }}>
+              Sending message {currentQueueIndex + 1} of {sendingQueue.length}.<br/>
+              WhatsApp requires opening tabs individually to prevent spam.
+            </p>
+            <div style={{ padding: '16px', background: 'rgba(37,211,102,0.1)', borderRadius: '12px', marginBottom: '24px', fontWeight: 600 }}>
+              Next: {sendingQueue[currentQueueIndex]?.memberName}
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setIsSendingQueueOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn" style={{ flex: 2, background: '#25D366', color: '#fff', border: 'none' }} onClick={handleSendNextInQueue}>
+                <MessageCircle size={16} /> Send & Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
