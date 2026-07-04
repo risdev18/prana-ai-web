@@ -410,7 +410,7 @@ const MemberPortal = () => {
         {/* Powered By Watermark */}
         <div style={{ textAlign: 'center', marginTop: '24px', opacity: 0.6 }}>
           <p style={{ fontSize: '11px', color: 'var(--text-3)', letterSpacing: '0.05em' }}>
-            Powered by <strong style={{ color: 'var(--primary-light)' }}>SaffarLabs Mitra</strong>
+            Powered by <strong style={{ color: 'var(--primary-light)' }}>Ombrix Mitra</strong>
           </p>
         </div>
       </div>

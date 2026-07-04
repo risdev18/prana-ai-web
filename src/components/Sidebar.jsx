@@ -204,7 +204,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* Powered By Watermark */}
         <div style={{ textAlign: 'center', marginTop: '16px', opacity: 0.6 }}>
           <p style={{ fontSize: '10px', color: 'var(--text-3)', letterSpacing: '0.05em', margin: 0 }}>
-            Powered by <strong style={{ color: 'var(--primary-light)' }}>SaffarLabs Mitra</strong>
+            Powered by <strong style={{ color: 'var(--primary-light)' }}>Ombrix Mitra</strong>
           </p>
         </div>
       </div>
