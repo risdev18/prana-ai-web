@@ -138,8 +138,9 @@ const MemberPortal = () => {
     name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
 
   const filteredMembers = members.filter(m =>
-    m.memberName.toLowerCase().includes(memberSearch.toLowerCase())
+    (m.memberName || '').toLowerCase().includes(memberSearch.toLowerCase())
   );
+
 
   return (
     <div style={{
