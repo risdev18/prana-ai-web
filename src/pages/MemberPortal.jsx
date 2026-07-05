@@ -106,12 +106,17 @@ const MemberPortal = () => {
     setAuthLoading(true);
     try {
       if (!authMember.password) {
-        const updatedMember = { ...authMember, password: pinInput };
-        // Save the phone number if they didn't have one
-        if (!authMember.phone) {
-            updatedMember.phone = verifyPhoneInput;
+        // IMPORTANT: Only send password + phone fields.
+        // Firestore security rule only allows unauthenticated updates
+        // if affectedKeys().hasOnly(['password', 'phone']).
+        // Spreading the full member object would fail the rule.
+        const patch = { password: pinInput };
+        if (!authMember.phone && verifyPhoneInput) {
+          patch.phone = verifyPhoneInput;
         }
-        await updateMember(selectedGym.gymId, updatedMember);
+        await updateMember(selectedGym.gymId, { ...patch, memberId: authMember.memberId });
+        // Build the full updated member for navigation state (local only)
+        const updatedMember = { ...authMember, ...patch };
         navigate('/member-dashboard', { state: { member: updatedMember, gym: selectedGym } });
       } else {
         if (authMember.password === pinInput) {
@@ -120,12 +125,14 @@ const MemberPortal = () => {
           setPinError('Incorrect password. Please try again.');
         }
       }
-    } catch {
+    } catch (err) {
+      console.error('Member portal update error:', err);
       setPinError('Error updating profile. Please try again.');
     } finally {
       setAuthLoading(false);
     }
   };
+
 
   const getInitials = (name) =>
     name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';

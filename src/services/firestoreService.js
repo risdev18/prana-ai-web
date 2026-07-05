@@ -70,9 +70,10 @@ export const deleteAllMembers = async (gymId) => {
 
 export const updateMember = async (gymId, member) => {
   const memberRef = doc(db, 'Gyms', gymId, 'Members', member.memberId);
-  // Use setDoc with merge:true so new fields (like password) are safely added
-  // without wiping existing data — also works when the doc is missing a field
-  await setDoc(memberRef, member, { merge: true });
+  // updateDoc is intentional — Firestore security rules allow unauthenticated updates
+  // only when affectedKeys().hasOnly(['password', 'phone']).
+  // Callers (especially MemberPortal) must only pass those fields for portal writes.
+  await updateDoc(memberRef, member);
 };
 
 
