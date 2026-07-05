@@ -70,8 +70,11 @@ export const deleteAllMembers = async (gymId) => {
 
 export const updateMember = async (gymId, member) => {
   const memberRef = doc(db, 'Gyms', gymId, 'Members', member.memberId);
-  await updateDoc(memberRef, member);
+  // Use setDoc with merge:true so new fields (like password) are safely added
+  // without wiping existing data — also works when the doc is missing a field
+  await setDoc(memberRef, member, { merge: true });
 };
+
 
 export const deleteMember = async (gymId, memberId) => {
   // memberId here is the Firestore document ID (d.id from onSnapshot)

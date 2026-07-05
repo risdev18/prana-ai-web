@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarCheck, RefreshCw, Dumbbell,
   Settings, LogOut, Zap, UserPlus, ClipboardList, Activity,
-  MessageSquare, ChevronRight, DollarSign, ShieldAlert
+  MessageSquare, ChevronRight, DollarSign, ShieldAlert, Smartphone, Copy
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { downloadGymBackupExcel } from '../utils/exportUtils';
@@ -170,6 +170,38 @@ const Sidebar = ({ isOpen, onClose }) => {
               {hasPermission('settings') && <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} />}
               <NavItem to="/app-support" icon={ShieldAlert} label="Contact Admin" onClick={onClose} />
             </NavSection>
+
+            {/* Member Portal Share Card */}
+            <div style={{ margin: '0 4px 16px', borderRadius: '12px', background: 'rgba(124,92,255,0.08)', border: '1px solid rgba(124,92,255,0.2)', padding: '12px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--primary-light)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Smartphone size={12} /> Member Portal
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-3)', margin: '0 0 10px', lineHeight: 1.5 }}>
+                Share this link with your members so they can view their own profile &amp; QR pass.
+              </p>
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/member-portal`;
+                  navigator.clipboard.writeText(url).then(() => {
+                    toast.success('Member portal link copied! Share it with your members.');
+                  }).catch(() => {
+                    toast.error('Could not copy. URL: ' + url);
+                  });
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  width: '100%', padding: '7px 10px', borderRadius: '8px',
+                  background: 'rgba(124,92,255,0.15)', border: '1px solid rgba(124,92,255,0.3)',
+                  color: 'var(--primary-light)', fontSize: '11px', cursor: 'pointer',
+                  fontWeight: 700, fontFamily: 'var(--font)', justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,92,255,0.25)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,92,255,0.15)'; }}
+              >
+                <Copy size={12} /> Copy Member Portal Link
+              </button>
+            </div>
           </>
         )}
       </nav>

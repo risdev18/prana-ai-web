@@ -10,28 +10,39 @@ export const downloadGymBackupExcel = async (gymId, gymName) => {
       return false; // Nothing to export
     }
 
-    // Format data for Excel
+    // Format data for Excel — all dates as readable text, phone as text to preserve leading zeros
     const excelData = members.map(m => ({
       'Member ID': m.shortId || '',
       'Name': m.memberName || '',
-      'Phone': m.phone || '',
+      'Phone': String(m.phone || ''),
       'Gender': m.gender || '',
       'Age': m.age || '',
       'Goal': m.goal || '',
       'Status': m.paymentStatus || '',
       'Fee': m.membershipFee || 0,
       'Paid': m.amountPaid || 0,
+      'Due': (m.membershipFee || 0) - (m.amountPaid || 0),
       'Start Date': m.membershipStartDate || '',
       'End Date': m.membershipEndDate || '',
-      'Added On': m.createdAt ? new Date(m.createdAt).toLocaleDateString() : ''
+      'Added On': m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : ''
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Auto-size all columns so NO data is ever cut off
+    const colWidths = Object.keys(excelData[0] || {}).map(key => ({
+      wch: Math.max(
+        key.length + 2,
+        ...excelData.map(row => String(row[key] || '').length)
+      ) + 3  // +3 extra padding for readability
+    }));
+    worksheet['!cols'] = colWidths;
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
     
     const safeGymName = (gymName || 'Gym').replace(/\s+/g, '_');
-    const fileName = `${safeGymName}_AutoBackup_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = `${safeGymName}_Backup_${new Date().toISOString().split('T')[0]}.xlsx`;
     
     XLSX.writeFile(workbook, fileName);
     
@@ -53,6 +64,16 @@ export const exportCurrentViewToExcel = (dataArray, fileName) => {
   
   try {
     const worksheet = XLSX.utils.json_to_sheet(dataArray);
+    
+    // Auto-size all columns so NO data is cut off
+    const colWidths = Object.keys(dataArray[0] || {}).map(key => ({
+      wch: Math.max(
+        key.length + 2,
+        ...dataArray.map(row => String(row[key] || '').length)
+      ) + 3
+    }));
+    worksheet['!cols'] = colWidths;
+    
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
     
@@ -71,7 +92,7 @@ export const syncToGoogleSheets = async (excelData) => {
   
   try {
     // Send data to Google Apps Script Web App
-    const response = await fetch(SCRIPT_URL, {
+    await fetch(SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors', // Essential for calling Google Scripts from browser without CORS errors
       headers: {
