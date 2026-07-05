@@ -1047,16 +1047,13 @@ textarea.form-control {
     padding: 0 12px;
   }
 
-  /* Splash page navbar compact */
-  .splash-nav-buttons .btn-ghost {
-    display: none;
-  }
+  /* Splash page navbar compact — do NOT hide Member Portal */
   .splash-nav-buttons {
     gap: 6px !important;
   }
 }
 
-/* Small phones — extra compact */
+/* Small phones — hide Gym Login to save space, but ALWAYS keep Member Portal */
 @media (max-width: 380px) {
   .splash-nav-buttons .btn-outline {
     display: none;

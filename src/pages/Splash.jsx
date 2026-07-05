@@ -86,7 +86,7 @@ const Splash = () => {
           VYRONIX
         </div>
         <div className="splash-nav-buttons" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => navigate('/member-portal')} className="btn btn-ghost" style={{ fontSize: '12px', padding: '6px 12px', height: '36px', gap: '5px' }}><Smartphone size={13} /> Member Portal</button>
+          <button onClick={() => navigate('/member-portal')} className="btn splash-member-portal-btn" style={{ fontSize: '12px', padding: '6px 12px', height: '36px', gap: '5px', background: 'rgba(124,92,255,0.12)', border: '1px solid rgba(124,92,255,0.35)', color: 'var(--primary-light)', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font)', display: 'flex', alignItems: 'center' }}><Smartphone size={13} /> Member Portal</button>
           <button onClick={() => navigate('/login')} className="btn btn-outline" style={{ fontSize: '12px', padding: '6px 14px', height: '36px', background: 'rgba(255,255,255,0.03)' }}>Gym Login</button>
           <button onClick={() => navigate('/register')} className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 16px', height: '36px' }}>Start Free</button>
         </div>
