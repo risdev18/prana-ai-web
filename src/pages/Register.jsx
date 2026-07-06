@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerGym } from '../services/authService';
+import { registerGym, loginGym } from '../services/authService';
 import { Mail, Lock, User, Building2, ArrowLeft, Eye, EyeOff, Zap } from 'lucide-react';
 
 const InputIcon = ({ icon, children }) => (
