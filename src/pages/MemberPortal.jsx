@@ -46,8 +46,6 @@ const MemberPortal = () => {
   const [verifyPhoneInput, setVerifyPhoneInput] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  const [authLoading, setAuthLoading] = useState(false);
-
   const needsPasswordSetup = !authMember?.passwordHash && !authMember?.password || authMember?.mustSetPassword;
   const currentStep = !selectedGym ? 1 : !authMember ? 2 : 3;
 
