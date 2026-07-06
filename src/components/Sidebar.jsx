@@ -246,6 +246,23 @@ const Sidebar = ({ isOpen, onClose }) => {
           Sign Out
         </button>
 
+        {/* Feedback Link */}
+        <a
+          href="mailto:support@ombrix.com?subject=App Feedback / Issue Report"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            width: '100%', padding: '10px 12px', borderRadius: 'var(--radius-md)',
+            background: 'rgba(124, 92, 255, 0.1)', border: '1px solid rgba(124, 92, 255, 0.2)',
+            color: 'var(--primary-light)', fontSize: '12px', cursor: 'pointer',
+            transition: 'all 0.2s', fontFamily: 'var(--font)',
+            fontWeight: 700, textDecoration: 'none', marginTop: '10px'
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(124, 92, 255, 0.2)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(124, 92, 255, 0.1)'}
+        >
+          <MessageSquare size={14} /> Submit Feedback / Issue
+        </a>
+
         {/* Powered By Watermark */}
         <div style={{ textAlign: 'center', marginTop: '16px', opacity: 0.6 }}>
           <p style={{ fontSize: '10px', color: 'var(--text-3)', letterSpacing: '0.05em', margin: 0 }}>

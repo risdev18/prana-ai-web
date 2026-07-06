@@ -843,15 +843,29 @@ const MemberDashboard = () => {
         onClick={() => setChatOpen(true)}
         style={{
           position: 'fixed', bottom: '30px', right: '30px', zIndex: 100,
-          width: '60px', height: '60px', borderRadius: '50%',
-          background: 'linear-gradient(135deg, #f72585, #7209b7)',
-          border: 'none', color: '#fff', cursor: 'pointer',
-          boxShadow: '0 8px 30px rgba(247,37,133,0.5)',
+          width: '54px', height: '54px', borderRadius: '50%',
+          background: 'linear-gradient(135deg, rgba(247,37,133,0.85), rgba(114,9,183,0.85))',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: '#fff', cursor: 'pointer',
+          boxShadow: '0 6px 20px rgba(247,37,133,0.3)',
           display: chatOpen ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center',
-          animation: 'pulse-glow 2s infinite'
+          transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          opacity: 0.85,
+          transform: 'scale(0.95)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = '1';
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = '0 8px 28px rgba(247,37,133,0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = '0.85';
+          e.currentTarget.style.transform = 'scale(0.95)';
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(247,37,133,0.3)';
         }}
       >
-        <MessageCircle size={28} />
+        <MessageCircle size={24} />
       </button>
 
       {/* Chat Window */}

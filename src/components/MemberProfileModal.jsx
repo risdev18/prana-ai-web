@@ -68,7 +68,7 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
     >
       <div
         style={{
-          width: '100%', maxWidth: '460px', height: '100vh',
+          width: '100%', maxWidth: '420px', height: '100vh',
           background: 'linear-gradient(180deg, #0d0a21 0%, #070514 100%)',
           borderLeft: '1px solid rgba(124, 92, 255, 0.15)',
           display: 'flex', flexDirection: 'column',
@@ -79,7 +79,7 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
         onClick={e => e.stopPropagation()}
       >
         {/* Close Strip */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 24px 0' }}>
           <button
             onClick={onClose}
             style={{
@@ -95,14 +95,14 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
         </div>
 
         {/* Hero Header */}
-        <div style={{ padding: '16px 28px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '16px 24px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
             {/* Avatar */}
             <div style={{
               width: '64px', height: '64px', borderRadius: '20px', flexShrink: 0,
               background: member.photoUrl ? 'none' : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 800, fontSize: '1.5rem', color: '#fff',
+              fontWeight: 700, fontSize: '1.5rem', color: '#fff',
               overflow: 'hidden',
               border: '2px solid rgba(124, 92, 255, 0.3)',
               boxShadow: '0 8px 24px rgba(124, 92, 255, 0.25)',
@@ -115,7 +115,7 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
             {/* Name + ID + Phone */}
             <div style={{ minWidth: 0, flex: 1 }}>
               <h2 style={{
-                fontSize: '1.2rem', fontFamily: 'var(--font-head)', fontWeight: 800,
+                fontSize: '1.2rem', fontFamily: 'var(--font-head)', fontWeight: 700,
                 margin: 0, lineHeight: 1.2, color: '#fff',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
@@ -126,14 +126,14 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
                   <span style={{
                     background: 'rgba(124, 92, 255, 0.12)', color: 'var(--primary-light)',
                     border: '1px solid rgba(124, 92, 255, 0.25)', fontSize: '11px',
-                    fontWeight: 800, padding: '2px 10px', borderRadius: '6px',
+                    fontWeight: 600, padding: '2px 10px', borderRadius: '6px',
                     letterSpacing: '0.04em', whiteSpace: 'nowrap',
                   }}>
                     {member.shortId}
                   </span>
                 )}
                 {member.phone && (
-                  <span style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 400, whiteSpace: 'nowrap' }}>
                     {member.phone}
                   </span>
                 )}
@@ -141,7 +141,7 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
               {/* Status pill */}
               <div style={{ marginTop: '8px' }}>
                 <span style={{
-                  display: 'inline-block', fontSize: '10px', fontWeight: 800,
+                  display: 'inline-block', fontSize: '10px', fontWeight: 600,
                   padding: '3px 10px', borderRadius: '999px', letterSpacing: '0.05em',
                   textTransform: 'uppercase',
                   background: member.status === 'Active'
@@ -172,15 +172,15 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
           ].map(stat => (
             <div key={stat.label} style={{ background: 'rgba(7,5,20,0.6)', padding: '16px 12px', textAlign: 'center' }}>
               <div style={{ fontSize: '16px', marginBottom: '4px' }}>{stat.icon}</div>
-              <div style={{ fontWeight: 800, fontSize: '14px', color: '#fff' }}>{stat.value}</div>
-              <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat.label}</div>
+              <div style={{ fontWeight: 700, fontSize: '14px', color: '#fff' }}>{stat.value}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>{stat.label}</div>
             </div>
           ))}
         </div>
 
         {/* Action List — Reference Style */}
         <div style={{ padding: '20px 0' }}>
-          <div style={{ padding: '0 20px', marginBottom: '8px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)' }}>
+          <div style={{ padding: '0 24px', marginBottom: '8px', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)' }}>
             Manage Member
           </div>
           {[
@@ -216,15 +216,15 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
                   {item.icon}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#fff' }}>{item.label}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{item.sub}</div>
+                  <div style={{ fontWeight: 600, fontSize: '14px', color: '#fff' }}>{item.label}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px', fontWeight: 400 }}>{item.sub}</div>
                 </div>
                 <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
               </>
             );
             const rowStyle = {
               display: 'flex', alignItems: 'center', gap: '14px',
-              padding: '14px 20px', cursor: 'pointer', transition: 'background 0.15s',
+              padding: '14px 24px', cursor: 'pointer', transition: 'background 0.15s',
               borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none',
               textDecoration: 'none',
             };
@@ -245,8 +245,8 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
         </div>
 
         {/* Fitness Profile */}
-        <div style={{ padding: '8px 20px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: '10px' }}>
+        <div style={{ padding: '8px 24px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: '10px' }}>
             Fitness Profile
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -260,26 +260,26 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
                 background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)',
                 borderRadius: '10px', padding: '12px',
               }}>
-                <div style={{ fontSize: '10px', color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>{item.label}</div>
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: '13px' }}>{item.value}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>{item.label}</div>
+                <div style={{ fontWeight: 600, color: '#fff', fontSize: '13px' }}>{item.value}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Activity Timeline */}
-        <div style={{ padding: '8px 20px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: '14px' }}>
+        <div style={{ padding: '8px 24px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: '14px' }}>
             Activity Timeline
           </div>
           {timeline.length === 0 ? (
-            <p style={{ color: 'var(--text-3)', fontSize: '13px', margin: 0 }}>No activity recorded yet.</p>
+            <p style={{ color: 'var(--text-3)', fontSize: '13px', margin: 0, fontWeight: 400 }}>No activity recorded yet.</p>
           ) : timeline.slice(0, 5).map(event => (
             <div key={event.id} style={{ display: 'flex', gap: '12px', paddingBottom: '14px', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)', marginTop: '5px', flexShrink: 0, boxShadow: '0 0 6px var(--primary)' }} />
               <div>
-                <div style={{ fontWeight: 600, fontSize: '13px', color: '#fff' }}>{event.title}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{new Date(event.timestamp).toLocaleString()}</div>
+                <div style={{ fontWeight: 500, fontSize: '13px', color: '#fff' }}>{event.title}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px', fontWeight: 400 }}>{new Date(event.timestamp).toLocaleString()}</div>
               </div>
             </div>
           ))}
@@ -287,8 +287,8 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
           <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--text-3)', marginTop: '5px', flexShrink: 0 }} />
             <div>
-              <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-2)' }}>Joined the gym</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>
+              <div style={{ fontWeight: 500, fontSize: '13px', color: 'var(--text-2)' }}>Joined the gym</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px', fontWeight: 400 }}>
                 {new Date(member.createdAt || member.membershipStartDate).toLocaleDateString()}
               </div>
             </div>
@@ -296,7 +296,7 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
         </div>
 
         {/* Delete Danger Zone */}
-        <div style={{ padding: '8px 20px 32px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 'auto' }}>
+        <div style={{ padding: '8px 24px 32px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 'auto' }}>
           <button
             onClick={() => setIsDeleteModalOpen(true)}
             style={{
@@ -304,7 +304,7 @@ const MemberProfileModal = ({ member, gymId, gymData, onClose }) => {
               background: 'rgba(255,94,126,0.06)', color: 'var(--error)',
               border: '1px solid rgba(255,94,126,0.2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              cursor: 'pointer', fontWeight: 700, fontSize: '13px', fontFamily: 'var(--font)',
+              cursor: 'pointer', fontWeight: 600, fontSize: '13px', fontFamily: 'var(--font)',
               transition: 'all 0.2s'
             }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,94,126,0.12)'}
