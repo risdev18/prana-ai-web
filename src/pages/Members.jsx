@@ -377,23 +377,25 @@ const Members = () => {
                     {/* Action Menu Toggle (Three Dots) */}
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                       {activeTab === 'balance_due' && bal > 0 && (
-                        <a 
-                          href={getWaLink(item)} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="btn"
-                          style={{ padding: '6px 12px', fontSize: '11px', height: '28px', background: 'rgba(0, 230, 118, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 230, 118, 0.3)' }}
-                          onClick={e => { e.stopPropagation(); logAnalyticsEvent(currentUser?.uid, gymData?.gymName, 'send_reminder_whatsapp'); }}
-                        >
-                          <MessageCircle size={14} style={{ marginRight: '6px' }} /> Remind
-                        </a>
-                        <button
-                          className="btn"
-                          style={{ padding: '6px 14px', fontSize: '11px', height: '28px', background: 'rgba(124, 92, 255, 0.2)', color: 'var(--primary-light)', border: '1px solid rgba(124, 92, 255, 0.4)', fontWeight: 700 }}
-                          onClick={e => { e.stopPropagation(); setSelectedPaymentMember(item); }}
-                        >
-                          <CreditCard size={13} style={{ marginRight: '6px' }} /> Collect ₹{bal.toLocaleString('en-IN')}
-                        </button>
+                        <>
+                          <a 
+                            href={getWaLink(item)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="btn"
+                            style={{ padding: '6px 12px', fontSize: '11px', height: '28px', background: 'rgba(0, 230, 118, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 230, 118, 0.3)' }}
+                            onClick={e => { e.stopPropagation(); logAnalyticsEvent(currentUser?.uid, gymData?.gymName, 'send_reminder_whatsapp'); }}
+                          >
+                            <MessageCircle size={14} style={{ marginRight: '6px' }} /> Remind
+                          </a>
+                          <button
+                            className="btn"
+                            style={{ padding: '6px 14px', fontSize: '11px', height: '28px', background: 'rgba(124, 92, 255, 0.2)', color: 'var(--primary-light)', border: '1px solid rgba(124, 92, 255, 0.4)', fontWeight: 700 }}
+                            onClick={e => { e.stopPropagation(); setSelectedPaymentMember(item); }}
+                          >
+                            <CreditCard size={13} style={{ marginRight: '6px' }} /> Collect ₹{bal.toLocaleString('en-IN')}
+                          </button>
+                        </>
                       )}
                       {!isLead && (
                         <button 
