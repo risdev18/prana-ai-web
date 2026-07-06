@@ -551,7 +551,6 @@ textarea.form-control {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border: 1px solid transparent;
-  backdrop-filter: blur(4px);
 }
 
 .badge-green  { background: rgba(0, 230, 118, 0.08); color: var(--success); border-color: rgba(0, 230, 118, 0.25); box-shadow: 0 0 10px rgba(0, 230, 118, 0.05); }
