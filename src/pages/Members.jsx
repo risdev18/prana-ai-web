@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Search, Plus, UserCheck, Clock, UserX,
-  MessageCircle, RefreshCw, Phone, X, ChevronRight, Upload, Download
+  MessageCircle, RefreshCw, Phone, X, ChevronRight, Upload, Download,
+  CreditCard, User, MoreVertical
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { subscribeToMembers, subscribeToEnquiries, getMemberStatus } from '../services/firestoreService';
+import { subscribeToMembers, subscribeToEnquiries, getMemberStatus, logAnalyticsEvent } from '../services/firestoreService';
 import { exportCurrentViewToExcel } from '../utils/exportUtils';
 import MemberProfileModal from '../components/MemberProfileModal';
 import ImportMembersModal from '../components/ImportMembersModal';
+import PaymentModal from '../components/PaymentModal';
+import ExtendModal from '../components/ExtendModal';
+import ReceiptModal from '../components/ReceiptModal';
 
 const Members = () => {
   const navigate = useNavigate();
@@ -22,6 +26,10 @@ const Members = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  const [selectedPaymentMember, setSelectedPaymentMember] = useState(null);
+  const [selectedExtendMember, setSelectedExtendMember] = useState(null);
+  const [selectedReceiptMember, setSelectedReceiptMember] = useState(null);
+
   useEffect(() => {
     if (!currentUser) return;
     const u1 = subscribeToMembers(currentUser.uid, setMembers);
@@ -33,30 +41,39 @@ const Members = () => {
     ...m, status: getMemberStatus(m.membershipEndDate)
   }));
 
+  const balanceDueCount = membersWithStatus.filter(m => ((m.membershipFee || 0) - (m.amountPaid || 0) > 0)).length;
+
   const tabs = [
     { id: 'all',      label: 'All',     count: members.length },
     { id: 'active',   label: 'Active',  count: membersWithStatus.filter(m => m.status === 'Active').length },
     { id: 'expiring', label: 'Expiring',count: membersWithStatus.filter(m => m.status === 'Expiring Soon').length },
     { id: 'expired',  label: 'Expired', count: membersWithStatus.filter(m => m.status === 'Expired').length },
+    { id: 'balance_due', label: 'Balance Due', count: balanceDueCount },
     { id: 'leads',    label: 'Leads',   count: enquiries.length },
   ];
 
-  let display = activeTab === 'leads' ? enquiries
-    : activeTab === 'all' ? membersWithStatus
-    : membersWithStatus.filter(m =>
-        activeTab === 'active' ? m.status === 'Active'
-        : activeTab === 'expiring' ? m.status === 'Expiring Soon'
-        : m.status === 'Expired'
-      );
+  const display = React.useMemo(() => {
+    let list = activeTab === 'leads' ? enquiries
+      : activeTab === 'all' ? membersWithStatus
+      : membersWithStatus.filter(m =>
+          activeTab === 'active' ? m.status === 'Active'
+          : activeTab === 'expiring' ? m.status === 'Expiring Soon'
+          : activeTab === 'balance_due' ? ((m.membershipFee || 0) - (m.amountPaid || 0) > 0)
+          : m.status === 'Expired'
+        );
 
-  if (search.trim()) {
-    const s = search.toLowerCase();
-    display = display.filter(item =>
-      (item.memberName || item.name || '').toLowerCase().includes(s) ||
-      (item.phone || '').includes(s) ||
-      (item.shortId || '').toLowerCase().includes(s)
-    );
-  }
+    if (search.trim()) {
+      const s = search.toLowerCase();
+      list = list.filter(item =>
+        (item.memberName || item.name || '').toLowerCase().includes(s) ||
+        (item.phone || '').includes(s) ||
+        (item.shortId || '').toLowerCase().includes(s)
+      );
+    }
+    return list;
+  }, [activeTab, membersWithStatus, enquiries, search]);
+
+
 
   // Pagination logic
   const totalPages = Math.ceil(display.length / itemsPerPage);
@@ -276,12 +293,10 @@ const Members = () => {
                 <div
                   key={item.id}
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1.2fr 1fr 0.8fr 1fr',
+                    display: 'flex',
+                    flexDirection: 'column',
                     padding: '16px 24px',
                     borderBottom: '1px solid var(--border-2)',
-                    alignItems: 'center',
-                    gap: '12px',
                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                     cursor: !isLead ? 'pointer' : 'default',
                   }}
@@ -293,127 +308,104 @@ const Members = () => {
                   }}
                   onClick={() => !isLead && setSelectedMember(item)}
                 >
-                  {/* Name + Avatar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-                    <div style={{
-                      width: '36px', height: '36px', borderRadius: '50%',
-                      flexShrink: 0, overflow: 'hidden',
-                      background: item.photoUrl ? 'none' : 'var(--primary-dim)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700, fontSize: '13px', color: 'var(--primary-light)',
-                      border: '1px solid var(--border)',
-                    }}>
-                      {item.photoUrl
-                        ? <img src={item.photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : getInitials(item.memberName || item.name)
-                      }
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '14px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.memberName || item.name}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.2fr 1fr 0.8fr 1fr',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    {/* Name + Avatar */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '50%',
+                        flexShrink: 0, overflow: 'hidden',
+                        background: item.photoUrl ? 'none' : 'var(--primary-dim)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: '13px', color: 'var(--primary-light)',
+                        border: '1px solid var(--border)',
+                      }}>
+                        {item.photoUrl
+                          ? <img src={item.photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : getInitials(item.memberName || item.name)
+                        }
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', fontWeight: 500 }}>
-                        <span>{item.phone || 'No phone'}</span>
-                        {item.shortId && <span style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', padding: '1px 6px', borderRadius: '4px', fontSize: '9.5px', fontWeight: 700 }}>{item.shortId}</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expiry / Status */}
-                  <div>
-                    {isLead ? (
-                      <span className="badge badge-blue" style={{ fontSize: '10px' }}>
-                        {item.status || 'New Lead'}
-                      </span>
-                    ) : (
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
-                          {item.membershipEndDate ? new Date(item.membershipEndDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.memberName || item.name}
                         </div>
-                        <div style={{
-                          display: 'inline-block', marginTop: '4px',
-                          fontSize: '9px', fontWeight: 800,
-                          background: sc.bg, color: sc.text,
-                          border: `1px solid ${sc.border}`,
-                          padding: '1px 8px', borderRadius: '999px',
-                          letterSpacing: '0.04em', textTransform: 'uppercase'
-                        }}>
-                          {item.status}
+                        <div style={{ fontSize: '12px', color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', fontWeight: 500 }}>
+                          <span>{item.phone || 'No phone'}</span>
+                          {item.shortId && <span style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', padding: '1px 6px', borderRadius: '4px', fontSize: '9.5px', fontWeight: 700 }}>{item.shortId}</span>}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Balance Pending */}
-                  <div>
-                    {bal > 0 ? (
-                      <span style={{ color: 'var(--error)', fontWeight: 800, fontSize: '13.5px' }}>₹{bal.toLocaleString('en-IN')}</span>
-                    ) : (
-                      <span style={{ color: 'var(--text-3)', fontSize: '13px' }}>—</span>
-                    )}
-                  </div>
+                    {/* Expiry / Status */}
+                    <div>
+                      {isLead ? (
+                        <span className="badge badge-blue" style={{ fontSize: '10px' }}>
+                          {item.status || 'New Lead'}
+                        </span>
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
+                            {item.membershipEndDate ? new Date(item.membershipEndDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                          </div>
+                          <div style={{
+                            display: 'inline-block', marginTop: '4px',
+                            fontSize: '9px', fontWeight: 800,
+                            background: sc.bg, color: sc.text,
+                            border: `1px solid ${sc.border}`,
+                            padding: '1px 8px', borderRadius: '999px',
+                            letterSpacing: '0.04em', textTransform: 'uppercase'
+                          }}>
+                            {item.status}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Actions Grid */}
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
-                    {!isLead && (
-                      <a
-                        href={getWaLink(item)}
-                        target="_blank" rel="noopener noreferrer"
-                        className="btn"
-                        style={{
-                          background: 'rgba(18, 140, 126, 0.1)',
-                          border: '1px solid rgba(18, 140, 126, 0.2)',
-                          color: '#25D366',
-                          height: '32px',
-                          width: '32px',
-                          padding: 0,
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                        onClick={e => { if (!item.phone) { e.preventDefault(); alert('No phone number configured.'); } }}
-                        title="Send WhatsApp text"
-                      >
-                        <MessageCircle size={14} />
-                      </a>
-                    )}
-                    {(item.status === 'Expired' || item.status === 'Expiring Soon') && (
-                      <button
-                        className="btn btn-outline"
-                        style={{
-                          height: '32px',
-                          width: '32px',
-                          padding: 0,
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                        onClick={() => navigate('/renewals')}
-                        title="Renew membership"
-                      >
-                        <RefreshCw size={14} />
-                      </button>
-                    )}
-                    {!isLead && (
-                      <button
-                        className="btn btn-ghost"
-                        style={{
-                          height: '32px',
-                          width: '32px',
-                          padding: 0,
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                        onClick={() => setSelectedMember(item)}
-                        title="View Full Profile"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    )}
+                    {/* Balance Pending */}
+                    <div>
+                      {bal > 0 ? (
+                        <span style={{ color: 'var(--error)', fontWeight: 800, fontSize: '13.5px' }}>₹{bal.toLocaleString('en-IN')}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-3)', fontSize: '13px' }}>—</span>
+                      )}
+                    </div>
+
+                    {/* Action Menu Toggle (Three Dots) */}
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      {activeTab === 'balance_due' && bal > 0 && (
+                        <a 
+                          href={getWaLink(item)} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="btn"
+                          style={{ padding: '6px 12px', fontSize: '11px', height: '28px', background: 'rgba(0, 230, 118, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 230, 118, 0.3)' }}
+                          onClick={e => { e.stopPropagation(); logAnalyticsEvent(currentUser?.uid, gymData?.gymName, 'send_reminder_whatsapp'); }}
+                        >
+                          <MessageCircle size={14} style={{ marginRight: '6px' }} /> Remind
+                        </a>
+                      )}
+                      {!isLead && (
+                        <button 
+                          className="btn btn-icon"
+                          style={{ background: 'transparent', border: 'none', color: 'var(--text-3)', cursor: 'pointer', padding: '8px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (selectedMember?.id === item.id) {
+                              setSelectedMember(null);
+                            } else {
+                              setSelectedMember(item);
+                              logAnalyticsEvent(currentUser?.uid, gymData?.gymName, 'view_profile', { memberId: item.shortId });
+                            }
+                          }}
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -470,6 +462,31 @@ const Members = () => {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         gymId={currentUser?.uid}
+      />
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={!!selectedPaymentMember}
+        onClose={() => setSelectedPaymentMember(null)}
+        member={selectedPaymentMember}
+        gymId={currentUser?.uid}
+        onPaymentComplete={(updated) => setSelectedReceiptMember(updated)}
+      />
+
+      {/* Extend Modal */}
+      <ExtendModal
+        isOpen={!!selectedExtendMember}
+        onClose={() => setSelectedExtendMember(null)}
+        member={selectedExtendMember}
+        onExtendSuccess={(updated) => setSelectedReceiptMember(updated)}
+      />
+
+      {/* Receipt Modal */}
+      <ReceiptModal
+        isOpen={!!selectedReceiptMember}
+        onClose={() => setSelectedReceiptMember(null)}
+        member={selectedReceiptMember}
+        gymData={gymData}
       />
     </div>
   );

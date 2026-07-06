@@ -126,6 +126,7 @@ import SuperDashboard from './pages/superadmin/SuperDashboard';
 import SuperGyms from './pages/superadmin/SuperGyms';
 import SuperSettings from './pages/superadmin/SuperSettings';
 import SuperTickets from './pages/superadmin/SuperTickets';
+import SuperAnalytics from './pages/superadmin/SuperAnalytics';
 
 const AppRoutes = () => {
   return (
@@ -146,6 +147,7 @@ const AppRoutes = () => {
       {/* Super Admin routes */}
       <Route path="/superadmin" element={<ProtectedRoute allowedFeature="superdashboard"><SuperDashboard /></ProtectedRoute>} />
       <Route path="/superadmin/gyms" element={<ProtectedRoute allowedFeature="supergyms"><SuperGyms /></ProtectedRoute>} />
+      <Route path="/superadmin/analytics" element={<ProtectedRoute allowedFeature="superdashboard"><SuperAnalytics /></ProtectedRoute>} />
       <Route path="/superadmin/settings" element={<ProtectedRoute allowedFeature="supersettings"><SuperSettings /></ProtectedRoute>} />
       <Route path="/superadmin/tickets" element={<ProtectedRoute allowedFeature="supertickets"><SuperTickets /></ProtectedRoute>} />
 

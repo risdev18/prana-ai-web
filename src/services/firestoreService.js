@@ -1,6 +1,6 @@
 import {
   collection, doc, setDoc, updateDoc, deleteDoc,
-  getDocs, getDoc, query, orderBy, onSnapshot, where, writeBatch, limit
+  getDocs, getDoc, query, orderBy, onSnapshot, where, writeBatch, limit, increment
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -37,7 +37,11 @@ export const updateGymProfile = async (gymId, data) => {
 
 export const addMember = async (gymId, member) => {
   const memberRef = doc(db, 'Gyms', gymId, 'Members', member.memberId);
-  await setDoc(memberRef, member);
+  const gymRef = doc(db, 'Gyms', gymId);
+  const batch = writeBatch(db);
+  batch.set(memberRef, member);
+  batch.update(gymRef, { activeMembersCount: increment(1) });
+  await batch.commit();
 };
 
 export const addMembersBatch = async (gymId, membersArray) => {
@@ -78,9 +82,12 @@ export const updateMember = async (gymId, member) => {
 
 
 export const deleteMember = async (gymId, memberId) => {
-  // memberId here is the Firestore document ID (d.id from onSnapshot)
   const memberRef = doc(db, 'Gyms', gymId, 'Members', memberId);
-  await deleteDoc(memberRef);
+  const gymRef = doc(db, 'Gyms', gymId);
+  const batch = writeBatch(db);
+  batch.delete(memberRef);
+  batch.update(gymRef, { activeMembersCount: increment(-1) });
+  await batch.commit();
 };
 
 export const subscribeToMembers = (gymId, callback) => {
@@ -348,4 +355,36 @@ export const getMemberStatus = (endDateStr) => {
   if (diffDays < 0) return 'Expired';
   if (diffDays <= 7) return 'Expiring Soon';
   return 'Active';
+};
+
+// ─── APP ANALYTICS ───
+// Logs a feature usage event to global AppAnalytics collection (superadmin can see all)
+export const logAnalyticsEvent = async (gymId, gymName, eventName, meta = {}) => {
+  try {
+    const eventId = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const eventRef = doc(db, 'AppAnalytics', eventId);
+    await setDoc(eventRef, {
+      gymId,
+      gymName: gymName || 'Unknown',
+      event: eventName,
+      meta,
+      timestamp: new Date().toISOString(),
+      date: new Date().toISOString().split('T')[0],
+    });
+  } catch (err) {
+    // Silent fail — analytics should never block UI
+    console.warn('[Analytics] Failed to log event:', err?.message);
+  }
+};
+
+// Subscribes to all analytics events for superadmin dashboard
+export const subscribeToAppAnalytics = (callback, limitCount = 500) => {
+  const q = query(
+    collection(db, 'AppAnalytics'),
+    orderBy('timestamp', 'desc'),
+    limit(limitCount)
+  );
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
+  });
 };

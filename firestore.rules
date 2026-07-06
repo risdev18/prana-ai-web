@@ -44,7 +44,11 @@ service cloud.firestore {
       // — limited to non-sensitive fields only (e.g. attendance password).
       match /Members/{memberId} {
         allow read: if true;
-        allow create, delete: if request.auth != null && request.auth.uid == gymId;
+        allow delete: if request.auth != null && request.auth.uid == gymId;
+        allow create: if request.auth != null && request.auth.uid == gymId && 
+                      (get(/databases/$(database)/documents/Gyms/$(gymId)).data.status != 'trial' || 
+                       get(/databases/$(database)/documents/Gyms/$(gymId)).data.activeMembersCount < 5 ||
+                       !("activeMembersCount" in get(/databases/$(database)/documents/Gyms/$(gymId)).data));
         // Gym owners can update everything.
         // Members (unauthenticated) can ONLY update their password and phone during onboarding.
         allow update: if (request.auth != null && request.auth.uid == gymId) ||

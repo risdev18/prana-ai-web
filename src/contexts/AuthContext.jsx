@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { getGymData, logoutGym } from '../services/authService';
+import { getGymData, subscribeToGymData, logoutGym } from '../services/authService';
 
 const PERMISSIONS = {
   superadmin: [
@@ -44,23 +44,23 @@ export const AuthProvider = ({ children }) => {
       });
     }, 5000);
 
-    let unsubscribe = () => {};
+    let unsubscribeAuth = () => {};
+    let unsubscribeGym = () => {};
 
     try {
-      unsubscribe = onAuthStateChanged(auth, async (user) => {
+      unsubscribeAuth = onAuthStateChanged(auth, (user) => {
         clearTimeout(safetyTimer);
         setCurrentUser(user);
         if (user) {
-          try {
-            const data = await getGymData(user.uid);
+          unsubscribeGym = subscribeToGymData(user.uid, (data) => {
             setGymData(data);
-          } catch (err) {
-            console.error('Failed to load gym data:', err);
-          }
+            setLoading(false);
+          });
         } else {
+          unsubscribeGym();
           setGymData(null);
+          setLoading(false);
         }
-        setLoading(false);
       });
     } catch (err) {
       console.error('Firebase onAuthStateChanged failed:', err);
@@ -70,7 +70,8 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       clearTimeout(safetyTimer);
-      unsubscribe();
+      unsubscribeAuth();
+      unsubscribeGym();
     };
   }, []);
 

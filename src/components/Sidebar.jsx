@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarCheck, RefreshCw, Dumbbell,
   Settings, LogOut, Zap, UserPlus, ClipboardList, Activity,
-  MessageSquare, ChevronRight, DollarSign, ShieldAlert, Smartphone, Copy
+  MessageSquare, ChevronRight, DollarSign, ShieldAlert, Smartphone, Copy, BarChart2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { downloadGymBackupExcel } from '../utils/exportUtils';
@@ -133,6 +133,18 @@ const Sidebar = ({ isOpen, onClose }) => {
           }}>
             {gymData?.gymName || 'Gym Operations'}
           </div>
+          {gymData?.status === 'trial' && (
+            <div style={{
+              marginTop: '4px', display: 'inline-block',
+              background: 'rgba(255, 176, 32, 0.1)', color: 'var(--gold)',
+              border: '1px solid rgba(255, 176, 32, 0.3)',
+              fontSize: '9px', fontWeight: 800, padding: '2px 6px',
+              borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.05em',
+              boxShadow: '0 0 8px rgba(255, 176, 32, 0.1)'
+            }}>
+              Trial Mode
+            </div>
+          )}
         </div>
       </div>
 
@@ -144,6 +156,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               <NavItem to="/superadmin" icon={LayoutDashboard} label="Admin Dashboard" onClick={onClose} />
               <NavItem to="/superadmin/gyms" icon={Users} label="Manage Gyms" onClick={onClose} />
               <NavItem to="/superadmin/tickets" icon={ShieldAlert} label="Global Tickets" onClick={onClose} />
+              <NavItem to="/superadmin/analytics" icon={BarChart2} label="App Analytics" onClick={onClose} />
               <NavItem to="/superadmin/settings" icon={Settings} label="Global Settings" onClick={onClose} />
             </NavSection>
           </>

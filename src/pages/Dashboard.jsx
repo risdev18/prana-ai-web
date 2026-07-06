@@ -6,11 +6,12 @@ import {
   Activity as ActivityIcon, DollarSign
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { subscribeToMembers, subscribeToAttendance, markAttendance, addEnquiry, subscribeToTransactions, subscribeToRecentActivity } from '../services/firestoreService';
+import { subscribeToMembers, subscribeToAttendance, markAttendance, addEnquiry, subscribeToTransactions, subscribeToRecentActivity, logAnalyticsEvent } from '../services/firestoreService';
 import MemberProfileModal from '../components/MemberProfileModal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
 import QRCode from 'react-qr-code';
+import TrialLock from '../components/TrialLock';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -43,6 +44,8 @@ const Dashboard = () => {
     const u2 = subscribeToAttendance(currentUser.uid, todayStr, setAttendanceRecords);
     const u3 = subscribeToTransactions(currentUser.uid, setTransactions);
     const u4 = subscribeToRecentActivity(currentUser.uid, setRecentActivity);
+    // Track page visit
+    logAnalyticsEvent(currentUser.uid, null, 'page_view', { page: 'dashboard' });
     return () => { u1(); u2(); u3(); u4(); };
   }, [currentUser, todayStr]);
 
@@ -275,59 +278,61 @@ const Dashboard = () => {
       )}
 
       {/* Analytics & Real Charts (Minimal) */}
-      <div className="grid-2 mb-6" style={{ gap: '32px', marginBottom: '32px' }}>
-        <div className="card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-            <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-head)' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(0, 212, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
-                <DollarSign size={16} />
+      <TrialLock featureName="Analytics & Dashboard Insights">
+        <div className="grid-2 mb-6" style={{ gap: '32px', marginBottom: '32px' }}>
+          <div className="card" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-head)' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(0, 212, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                  <DollarSign size={16} />
+                </div>
+                Revenue Trend (7 Days)
               </div>
-              Revenue Trend (7 Days)
+            </div>
+            <div style={{ height: '200px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--text-3)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-3)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                  <Tooltip 
+                    contentStyle={{ background: 'rgba(15, 12, 38, 0.9)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', backdropFilter: 'blur(10px)' }}
+                    itemStyle={{ color: 'var(--accent)', fontWeight: 700 }}
+                  />
+                  <Line type="monotone" dataKey="revenue" stroke="var(--accent)" strokeWidth={3} dot={{ fill: 'var(--accent)', r: 4, strokeWidth: 2, stroke: '#070514' }} activeDot={{ r: 6, fill: '#fff' }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          <div style={{ height: '200px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--text-3)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--text-3)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-                <Tooltip 
-                  contentStyle={{ background: 'rgba(15, 12, 38, 0.9)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px', backdropFilter: 'blur(10px)' }}
-                  itemStyle={{ color: 'var(--accent)', fontWeight: 700 }}
-                />
-                <Line type="monotone" dataKey="revenue" stroke="var(--accent)" strokeWidth={3} dot={{ fill: 'var(--accent)', r: 4, strokeWidth: 2, stroke: '#070514' }} activeDot={{ r: 6, fill: '#fff' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
 
-        <div className="card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-            <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-head)' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(124, 92, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-light)' }}>
-                <ActivityIcon size={16} />
+          <div className="card" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-head)' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(124, 92, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-light)' }}>
+                  <ActivityIcon size={16} />
+                </div>
+                Recent Activity
               </div>
-              Recent Activity
+              <button onClick={() => navigate('/members')} className="btn btn-ghost" style={{ fontSize: '12px', padding: '4px 8px', height: 'auto' }}>View Log</button>
             </div>
-            <button onClick={() => navigate('/members')} className="btn btn-ghost" style={{ fontSize: '12px', padding: '4px 8px', height: 'auto' }}>View Log</button>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {recentActivity.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-3)', fontSize: '13px' }}>No recent activity to show.</div>
-            ) : recentActivity.slice(0, 4).map((act, i) => (
-              <div key={act.id || i} style={{ display: 'flex', gap: '14px', padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--border-2)' : 'none' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-hover)', color: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--border)' }}>
-                  {act.type === 'check_in' ? <CalendarCheck size={16} /> : act.type === 'payment' ? <DollarSign size={16} /> : <MessageCircle size={16} />}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {recentActivity.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-3)', fontSize: '13px' }}>No recent activity to show.</div>
+              ) : recentActivity.slice(0, 4).map((act, i) => (
+                <div key={act.id || i} style={{ display: 'flex', gap: '14px', padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--border-2)' : 'none' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-hover)', color: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--border)' }}>
+                    {act.type === 'check_in' ? <CalendarCheck size={16} /> : act.type === 'payment' ? <DollarSign size={16} /> : <MessageCircle size={16} />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#fff', fontWeight: 600 }}>{act.title || act.description}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{new Date(act.timestamp || act.createdAt).toLocaleString()}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '13px', color: '#fff', fontWeight: 600 }}>{act.title || act.description}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{new Date(act.timestamp || act.createdAt).toLocaleString()}</div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </TrialLock>
 
       {/* Two Column Section */}
       <div className="grid-2" style={{ gap: '32px', alignItems: 'start' }}>

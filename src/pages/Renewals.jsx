@@ -3,14 +3,19 @@ import { RefreshCw, MessageCircle, AlertTriangle, Phone, CheckCircle, Bell, Tren
 import { subscribeToMembers, getMemberStatus, updateMember } from '../services/firestoreService';
 import toast from 'react-hot-toast';
 import PaymentModal from '../components/PaymentModal';
+import ExtendModal from '../components/ExtendModal';
+import ReceiptModal from '../components/ReceiptModal';
 import { getWhatsAppLink } from '../utils/whatsapp';
 import { useAuth } from '../contexts/AuthContext';
+import TrialLock from '../components/TrialLock';
 
 const Renewals = () => {
   const { currentUser, gymData } = useAuth();
   const [members, setMembers] = useState([]);
   const [loadingId, setLoadingId] = useState(null);
   const [selectedPaymentMember, setSelectedPaymentMember] = useState(null);
+  const [selectedExtendMember, setSelectedExtendMember] = useState(null);
+  const [selectedReceiptMember, setSelectedReceiptMember] = useState(null);
 
   // Queue state for sending all reminders
   const [sendingQueue, setSendingQueue] = useState([]);
@@ -86,27 +91,8 @@ const Renewals = () => {
     }
   };
 
-  const handleRenew = async (member) => {
-    if (!window.confirm(`Mark ${member.memberName} as Renewed & extend membership by 1 month?`)) return;
-    setLoadingId(member.id);
-    try {
-      const updatedMember = { ...member };
-      const currentEnd = new Date(member.membershipEndDate || new Date());
-      const today = new Date();
-      const baseDate = currentEnd < today ? today : currentEnd;
-      baseDate.setMonth(baseDate.getMonth() + 1);
-      
-      updatedMember.membershipEndDate = baseDate.toISOString().split('T')[0];
-      // We do NOT set amountPaid here. The Khata system handles payments separately.
-      updatedMember.paymentStatus = 'Pending';
-      
-      await updateMember(currentUser.uid, updatedMember);
-      toast.success('Membership extended. Please log payment if received.');
-    } catch (err) {
-      toast.error('Failed to renew member');
-    } finally {
-      setLoadingId(null);
-    }
+  const handleRenew = (member) => {
+    setSelectedExtendMember(member);
   };
 
   const getDaysInfo = (member) => {
@@ -141,19 +127,21 @@ const Renewals = () => {
         </div>
         
         {uniqueRenewals.length > 0 && (
-          <button 
-            className="btn" 
-            onClick={handleSendAll}
-            style={{ 
-              background: '#25D366', 
-              color: '#fff', 
-              gap: '8px', 
-              boxShadow: '0 4px 12px rgba(37,211,102,0.3)' 
-            }}
-          >
-            <MessageCircle size={18} />
-            Send All Reminders
-          </button>
+          <TrialLock featureName="Bulk WhatsApp Reminders">
+            <button 
+              className="btn" 
+              onClick={handleSendAll}
+              style={{ 
+                background: 'var(--success)', 
+                color: '#fff', 
+                gap: '8px', 
+                boxShadow: 'var(--shadow-sm)' 
+              }}
+            >
+              <MessageCircle size={18} />
+              Send All Reminders
+            </button>
+          </TrialLock>
         )}
       </div>
 
@@ -345,6 +333,20 @@ const Renewals = () => {
         onPaymentSuccess={(paymentRecord, updatedMember) => {
           // Success handled in modal, optionally trigger PDF generation here
         }}
+      />
+
+      <ExtendModal
+        isOpen={!!selectedExtendMember}
+        onClose={() => setSelectedExtendMember(null)}
+        member={selectedExtendMember}
+        onExtendSuccess={(updatedMember) => setSelectedReceiptMember(updatedMember)}
+      />
+
+      <ReceiptModal
+        isOpen={!!selectedReceiptMember}
+        onClose={() => setSelectedReceiptMember(null)}
+        member={selectedReceiptMember}
+        gymData={gymData}
       />
 
       {/* Sending Queue Modal */}

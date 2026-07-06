@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, User, Phone, CheckCircle, QrCode, Ruler, Weight, Target, Activity, DollarSign, Camera, Sparkles, Calendar, MessageCircle, Clipboard } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '../contexts/AuthContext';
-import { addMember, markAttendance } from '../services/firestoreService';
+import { addMember, markAttendance, subscribeToMembers, logAnalyticsEvent } from '../services/firestoreService';
 import { GENDERS, ACTIVITY_LEVELS, GOALS } from '../core/constants';
 import { generateAssessment } from '../core/calculator';
 import QRCode from 'react-qr-code';
 import toast from 'react-hot-toast';
 import ReceiptModal from '../components/ReceiptModal';
+import { addMonthsSafe } from '../utils/dateUtils';
+import TrialLock from '../components/TrialLock';
 
 const GOAL_ICONS = {
   'Cut': '🔥',
@@ -37,7 +39,8 @@ const AddMember = () => {
     memberName: '',
     phone: '',
     membershipStartDate: todayStr,
-    membershipEndDate: nextMonthStr,
+    durationMonths: 1,
+    membershipEndDate: addMonthsSafe(todayStr, 1),
     paymentStatus: 'Paid',
     membershipFee: 1500,
     amountPaid: 1500,
@@ -56,15 +59,32 @@ const AddMember = () => {
   const [error, setError] = useState('');
   const [successMember, setSuccessMember] = useState(null);
   const [attendanceCheckedIn, setAttendanceCheckedIn] = useState(false);
-  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [members, setMembers] = useState([]);
+  
+  React.useEffect(() => {
+    if (!currentUser) return;
+    return subscribeToMembers(currentUser.uid, setMembers);
+  }, [currentUser]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
     
-    // Automatically set amount paid to fee if paymentStatus is Paid
     setFormData(prev => {
       const next = { ...prev, [name]: val };
+      
+      if (name === 'membershipStartDate' && !isEndDateManuallyEdited) {
+        next.membershipEndDate = addMonthsSafe(val, next.durationMonths);
+      }
+      if (name === 'durationMonths') {
+        setIsEndDateManuallyEdited(false);
+        next.membershipEndDate = addMonthsSafe(next.membershipStartDate, val);
+      }
+      if (name === 'membershipEndDate') {
+        setIsEndDateManuallyEdited(true);
+      }
+
+      // Automatically set amount paid to fee if paymentStatus is Paid
       if (name === 'membershipFee' && prev.paymentStatus === 'Paid') {
         next.amountPaid = val;
       }
@@ -95,6 +115,12 @@ const AddMember = () => {
     if (!formData.memberName.trim()) return toast.error('Name is required');
     if (!formData.phone.trim()) return toast.error('Phone number is required');
 
+    // Trial Mode Member Limit Check
+    if (gymData?.status === 'trial' && members.length >= 5) {
+      toast.error('Trial Limit Reached: You can only add up to 5 members in Trial Mode. Please activate your plan to add more.');
+      return;
+    }
+
     const fee = parseFloat(formData.membershipFee);
     const paid = parseFloat(formData.amountPaid);
     if (isNaN(fee) || fee < 0) return toast.error('Invalid membership fee');
@@ -114,7 +140,7 @@ const AddMember = () => {
         phone: formData.phone.trim(),
         membershipStartDate: formData.membershipStartDate,
         membershipEndDate: formData.membershipEndDate,
-        durationMonths: Math.round((new Date(formData.membershipEndDate) - new Date(formData.membershipStartDate)) / (1000 * 60 * 60 * 24 * 30)),
+        membershipDuration: parseInt(formData.durationMonths, 10),
         paymentStatus: formData.paymentStatus,
         membershipFee: fee,
         amountPaid: paid,
@@ -151,6 +177,7 @@ const AddMember = () => {
 
       // Save directly if no fitness toggled
       await addMember(currentUser.uid, newMember);
+      logAnalyticsEvent(currentUser.uid, gymData?.gymName, 'member_added', { memberName: newMember.memberName, duration: newMember.membershipDuration });
       setSuccessMember(newMember);
       toast.success('Member added successfully!');
     } catch (err) {
@@ -363,7 +390,7 @@ const AddMember = () => {
               </div>
             </div>
 
-            <div className="grid-2 gap-3">
+            <div className="grid-3 gap-3">
               <div className="form-group mb-0">
                 <label>Start Date</label>
                 <div style={{ position: 'relative' }}>
@@ -373,6 +400,19 @@ const AddMember = () => {
                     style={{ paddingLeft: '38px' }}
                     value={formData.membershipStartDate} onChange={handleChange}
                   />
+                </div>
+              </div>
+              <div className="form-group mb-0">
+                <label>Duration</label>
+                <div style={{ position: 'relative' }}>
+                  <select 
+                    name="durationMonths" className="form-control" 
+                    value={formData.durationMonths} onChange={handleChange}
+                  >
+                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
+                      <option key={m} value={m}>{m} Month{m > 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="form-group mb-0">
@@ -523,10 +563,17 @@ const AddMember = () => {
               </div>
             )}
           </div>
-
-          <button type="submit" className="btn btn-primary w-full flex items-center justify-center gap-2" disabled={loading} style={{ padding: '16px', fontSize: '16px', fontWeight: 700 }}>
-            {loading ? 'Processing...' : formData.includeFitness ? <><Sparkles size={20} /> Generate Assessment & Plan</> : <><QrCode size={20} /> Save & Generate QR</>}
-          </button>
+          {gymData?.status === 'trial' && members.length >= 5 ? (
+            <TrialLock featureName="Adding more than 5 members">
+              <button type="button" className="btn btn-primary w-full flex items-center justify-center gap-2" disabled style={{ padding: '16px', fontSize: '16px', fontWeight: 700 }}>
+                Limit Reached
+              </button>
+            </TrialLock>
+          ) : (
+            <button type="submit" className="btn btn-primary w-full flex items-center justify-center gap-2" disabled={loading} style={{ padding: '16px', fontSize: '16px', fontWeight: 700 }}>
+              {loading ? 'Processing...' : formData.includeFitness ? <><Sparkles size={20} /> Generate Assessment & Plan</> : <><QrCode size={20} /> Save & Generate QR</>}
+            </button>
+          )}
         </form>
       </div>
     </div>

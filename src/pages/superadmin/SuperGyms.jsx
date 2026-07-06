@@ -90,13 +90,24 @@ const SuperGyms = () => {
                   <td style={{ padding: '16px 24px', color: 'var(--text-2)' }}>{gym.ownerName}</td>
                   <td style={{ padding: '16px 24px', color: 'var(--text-2)' }}>{gym.email}</td>
                   <td style={{ padding: '16px 24px' }}>
-                    {gym.status === 'active' ? (
+                    {gym.status === 'active' && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontSize: '13px', background: 'rgba(0, 230, 118, 0.1)', padding: '4px 10px', borderRadius: '100px' }}>
                         <CheckCircle size={14} /> Active
                       </span>
-                    ) : (
+                    )}
+                    {gym.status === 'trial' && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--gold)', fontSize: '13px', background: 'rgba(255, 176, 32, 0.1)', padding: '4px 10px', borderRadius: '100px' }}>
+                        <CheckCircle size={14} /> Trial
+                      </span>
+                    )}
+                    {gym.status === 'blocked' && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--error)', fontSize: '13px', background: 'rgba(255, 94, 126, 0.1)', padding: '4px 10px', borderRadius: '100px' }}>
+                        <ShieldAlert size={14} /> Blocked
+                      </span>
+                    )}
+                    {(!['active', 'trial', 'blocked'].includes(gym.status)) && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--warning)', fontSize: '13px', background: 'rgba(255, 171, 0, 0.1)', padding: '4px 10px', borderRadius: '100px' }}>
-                        <ShieldAlert size={14} /> Pending
+                        <ShieldAlert size={14} /> {gym.status || 'Pending'}
                       </span>
                     )}
                   </td>
@@ -110,8 +121,9 @@ const SuperGyms = () => {
                           style={{ padding: '6px 12px', fontSize: '13px', minWidth: '110px' }}
                         >
                           <option value="pending">Pending</option>
+                          <option value="trial">Trial</option>
                           <option value="active">Active</option>
-                          <option value="revoked">Revoked</option>
+                          <option value="blocked">Blocked</option>
                         </select>
                         <button 
                           onClick={() => handleDeleteGym(gym.id)} 

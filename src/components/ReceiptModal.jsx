@@ -15,12 +15,13 @@ const ReceiptModal = ({ isOpen, onClose, member, gymData }) => {
   const email = gymData?.email || '';
 
 
-  // Calculate duration
   const start = new Date(member.membershipStartDate);
   const end = new Date(member.membershipEndDate);
   const diffTime = Math.abs(end - start);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   const months = Math.round(diffDays / 30) || 1;
+  const isRenewal = member.membershipHistory && member.membershipHistory.length > 0;
+  const statusColor = member.paymentStatus === 'Paid' ? '#2e7d32' : '#d32f2f';
 
   const downloadReceipt = async () => {
     if (!receiptRef.current) return;
@@ -144,7 +145,10 @@ const ReceiptModal = ({ isOpen, onClose, member, gymData }) => {
                 
                 {/* Left Side Header */}
                 <div style={{ paddingTop: '20px', flex: 1 }}>
-                  <h1 style={{ margin: '0 0 40px 0', fontSize: '24px', fontWeight: '800', letterSpacing: '1px' }}>PAYMENT RECEIPT</h1>
+                  <h1 style={{ margin: '0 0 10px 0', fontSize: '28px', fontWeight: '900', letterSpacing: '1.5px', color: '#1a202c' }}>PAYMENT RECEIPT</h1>
+                  <div style={{ display: 'inline-block', background: isRenewal ? '#e6fffa' : '#ebf4ff', color: isRenewal ? '#319795' : '#3182ce', padding: '4px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: '800', letterSpacing: '1px', marginBottom: '30px' }}>
+                    {isRenewal ? 'MEMBERSHIP RENEWAL' : 'NEW MEMBERSHIP'}
+                  </div>
                   
                   <div style={{ display: 'flex', gap: '40px', marginBottom: '40px' }}>
                     <div>
@@ -203,10 +207,19 @@ const ReceiptModal = ({ isOpen, onClose, member, gymData }) => {
               </div>
 
               {/* Additional Details */}
-              <div style={{ marginTop: '20px', marginBottom: '40px' }}>
-                <div style={{ fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>PAYMENT MODE: {member.paymentStatus === 'Paid' ? 'CASH/ONLINE' : 'PENDING'}</div>
-                <div style={{ fontSize: '14px', fontWeight: '800', marginBottom: '4px' }}>MEMBERSHIP VALIDITY:</div>
-                <div style={{ fontSize: '14px', fontWeight: '800' }}>{new Date(member.membershipEndDate).toLocaleDateString('en-GB')}</div>
+              <div style={{ marginTop: '20px', marginBottom: '40px', background: '#f7fafc', padding: '24px', borderRadius: '12px', borderLeft: `6px solid ${statusColor}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#4a5568' }}>PAYMENT STATUS:</div>
+                  <div style={{ fontSize: '16px', fontWeight: '900', color: statusColor, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                     {member.paymentStatus === 'Paid' ? 'PAID ✓' : 'PENDING'}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#4a5568' }}>MEMBERSHIP VALIDITY:</div>
+                  <div style={{ fontSize: '15px', fontWeight: '800', color: '#2d3748' }}>
+                    {new Date(member.membershipStartDate).toLocaleDateString('en-GB')} <span style={{ color: '#a0aec0', margin: '0 8px' }}>TO</span> {new Date(member.membershipEndDate).toLocaleDateString('en-GB')}
+                  </div>
+                </div>
               </div>
 
               {/* Table */}
@@ -220,7 +233,7 @@ const ReceiptModal = ({ isOpen, onClose, member, gymData }) => {
 
                 <div style={{ display: 'flex', marginBottom: '16px' }}>
                   <div style={{ width: '10%', fontSize: '14px', fontWeight: '700' }}>1</div>
-                  <div style={{ width: '40%', fontSize: '14px', fontWeight: '700', paddingRight: '10px' }}>GYM MEMBERSHIP</div>
+                  <div style={{ width: '40%', fontSize: '14px', fontWeight: '700', paddingRight: '10px' }}>{isRenewal ? 'GYM MEMBERSHIP RENEWAL' : 'GYM MEMBERSHIP'}</div>
                   <div style={{ width: '25%', fontSize: '14px', fontWeight: '700' }}>{months} MONTH{months > 1 ? 'S' : ''}</div>
                   <div style={{ width: '25%', fontSize: '14px', fontWeight: '700', textAlign: 'right' }}>{Number(member.membershipFee).toFixed(2)}</div>
                 </div>
