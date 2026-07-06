@@ -387,6 +387,13 @@ const Members = () => {
                         >
                           <MessageCircle size={14} style={{ marginRight: '6px' }} /> Remind
                         </a>
+                        <button
+                          className="btn"
+                          style={{ padding: '6px 14px', fontSize: '11px', height: '28px', background: 'rgba(124, 92, 255, 0.2)', color: 'var(--primary-light)', border: '1px solid rgba(124, 92, 255, 0.4)', fontWeight: 700 }}
+                          onClick={e => { e.stopPropagation(); setSelectedPaymentMember(item); }}
+                        >
+                          <CreditCard size={13} style={{ marginRight: '6px' }} /> Collect ₹{bal.toLocaleString('en-IN')}
+                        </button>
                       )}
                       {!isLead && (
                         <button 
