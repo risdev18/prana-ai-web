@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Activity, Target, Dumbbell, Apple, Moon, Droplets, Zap, TrendingUp, User, Edit3, MessageCircle, X, Send, MessageSquare, CheckCircle, Home, LayoutDashboard, Settings as SettingsIcon, CreditCard } from 'lucide-react';
+import { ArrowLeft, Activity, Target, Dumbbell, Apple, Moon, Droplets, Zap, TrendingUp, User, Edit3, MessageCircle, X, Send, MessageSquare, CheckCircle, Home, LayoutDashboard, Settings as SettingsIcon, CreditCard, CalendarCheck } from 'lucide-react';
 import QRCode from 'react-qr-code';
-import { updateMember, saveAssessment, addQuery } from '../services/firestoreService';
+import { updateMember, saveAssessment, addQuery, getMemberAttendanceThisMonth } from '../services/firestoreService';
 import { generateAssessment } from '../core/calculator';
 
 // ─── 3D BODY MODEL ───────────────────────────────────────────────────────────
@@ -78,6 +78,32 @@ const MemberDashboard = () => {
   const [editGoal, setEditGoal] = useState(member.goal || 'Maintain Fitness');
   const [saveLoading, setSaveLoading] = useState(false);
   const [showCard, setShowCard] = useState(false);
+
+  // Attendance this month
+  const [attendanceCount, setAttendanceCount] = useState(null);
+  useEffect(() => {
+    if (gym?.gymId && member?.memberId) {
+      getMemberAttendanceThisMonth(gym.gymId, member.memberId)
+        .then(count => setAttendanceCount(count))
+        .catch(() => setAttendanceCount(null));
+    }
+  }, [gym?.gymId, member?.memberId]);
+
+  // Membership expiry calculation
+  const membershipEndDate = member.membershipEndDate ? new Date(member.membershipEndDate) : null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysLeft = membershipEndDate ? Math.ceil((membershipEndDate - today) / (1000 * 60 * 60 * 24)) : null;
+
+  // Last check-in display
+  const lastCheckIn = member.lastCheckIn ? new Date(member.lastCheckIn) : null;
+  const lastCheckInStr = lastCheckIn
+    ? lastCheckIn.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' +
+      lastCheckIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : 'No check-ins yet';
+  const isLastCheckInToday = lastCheckIn
+    ? lastCheckIn.toDateString() === new Date().toDateString()
+    : false;
 
   // Query submission state
   const [queryType, setQueryType] = useState('Query');
@@ -571,8 +597,109 @@ const MemberDashboard = () => {
           </div>
         )}
 
+        {/* ─── MEMBERSHIP RENEWAL REMINDER ─── */}
+        {daysLeft !== null && daysLeft <= 7 && (
+          <div style={{
+            background: daysLeft <= 0
+              ? 'linear-gradient(135deg, rgba(244,63,94,0.15) 0%, rgba(244,63,94,0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%)',
+            border: `1px solid ${daysLeft <= 0 ? 'rgba(244,63,94,0.35)' : 'rgba(245,158,11,0.35)'}`,
+            borderRadius: '16px', padding: '18px 22px',
+            marginBottom: '16px',
+            display: 'flex', alignItems: 'center', gap: '16px',
+          }} className="animate-fade-up">
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
+              background: daysLeft <= 0 ? 'rgba(244,63,94,0.2)' : 'rgba(245,158,11,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.5rem'
+            }}>
+              {daysLeft <= 0 ? '🚫' : '⏰'}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontWeight: 700, fontSize: '0.95rem',
+                color: daysLeft <= 0 ? '#f87171' : '#fbbf24',
+                marginBottom: '3px'
+              }}>
+                {daysLeft <= 0
+                  ? 'Membership Expired'
+                  : daysLeft === 1
+                  ? 'Expires Tomorrow!'
+                  : `Expires in ${daysLeft} days`}
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-2)', lineHeight: 1.4 }}>
+                {daysLeft <= 0
+                  ? 'Your membership has expired. Contact the gym to renew and continue your journey.'
+                  : 'Renew now to avoid any interruption to your fitness journey.'}
+              </div>
+            </div>
+          </div>
+        )}
 
+        {/* ─── ATTENDANCE HISTORY CARD ─── */}
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid rgba(99,102,241,0.2)',
+          borderRadius: '16px', padding: '22px',
+          marginBottom: '16px',
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px',
+          alignItems: 'center'
+        }} className="animate-fade-up">
+          {/* Left: Month attendance */}
+          <div style={{ borderRight: '1px solid var(--border)', paddingRight: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: 'rgba(99,102,241,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <CalendarCheck size={18} color="var(--primary-light)" />
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                This Month
+              </div>
+            </div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 700, fontFamily: 'var(--font-head)', color: '#fff', lineHeight: 1 }}>
+              {attendanceCount !== null ? attendanceCount : '—'}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginTop: '4px' }}>
+              {attendanceCount === 1 ? 'day present' : 'days present'}
+            </div>
+          </div>
 
+          {/* Right: Last check-in */}
+          <div style={{ paddingLeft: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: isLastCheckInToday ? 'rgba(6,214,160,0.15)' : 'rgba(255,255,255,0.05)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <CheckCircle size={18} color={isLastCheckInToday ? '#06d6a0' : 'var(--text-3)'} />
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Last Check-In
+              </div>
+            </div>
+            <div style={{
+              fontSize: isLastCheckInToday ? '0.9rem' : '0.82rem',
+              fontWeight: 700,
+              color: isLastCheckInToday ? '#06d6a0' : '#fff',
+              lineHeight: 1.3
+            }}>
+              {isLastCheckInToday ? 'Today' : lastCheckInStr.split(',')[0]}
+            </div>
+            {lastCheckIn && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '2px' }}>
+                {isLastCheckInToday ? lastCheckInStr.split(', ')[1] : lastCheckInStr.split(', ')[1]}
+              </div>
+            )}
+            {!lastCheckIn && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '2px' }}>No check-ins yet</div>
+            )}
+          </div>
+        </div>
 
         {/* BMI CARD */}
         <div style={{

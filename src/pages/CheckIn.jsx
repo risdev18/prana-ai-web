@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getMemberByShortId, getAttendanceRecordFull, markAttendance, updateCheckOutTime, getGymLocation } from '../services/firestoreService';
+import { getMemberByShortId, getAttendanceRecordFull, markAttendance, updateCheckOutTime, getGymLocation, updateMember } from '../services/firestoreService';
 import { verifyLocation, getLocationErrorMessage } from '../core/geolocation';
 import { CheckCircle, XCircle, AlertTriangle, LogOut, MapPin, Navigation, Shield, Loader } from 'lucide-react';
 
@@ -107,6 +107,12 @@ const CheckIn = () => {
       if (!existing) {
         // First scan → Check IN
         await markAttendance(gymId, todayStr, member.id, member.memberName);
+        // Stamp lastCheckIn on the member profile (used by Member Dashboard)
+        try {
+          await updateMember(gymId, { memberId: member.memberId, lastCheckIn: new Date().toISOString() });
+        } catch (stampErr) {
+          console.warn('Could not stamp lastCheckIn on member:', stampErr);
+        }
         setStatus('success');
         setMessage(`Welcome, ${member.memberName}! 💪`);
         setSubMessage(`Check-In at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);

@@ -388,3 +388,23 @@ export const subscribeToAppAnalytics = (callback, limitCount = 500) => {
     callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
   });
 };
+
+// ─── MEMBER PORTAL: Get monthly attendance count for a member ───
+// Checks each calendar day of the current month and counts days where this member has an attendance record.
+// Uses Promise.all for parallel fetches. Works without composite index.
+export const getMemberAttendanceThisMonth = async (gymId, memberId) => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-indexed
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = now.getDate();
+
+  const checks = [];
+  for (let d = 1; d <= today; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    checks.push(getDoc(doc(db, 'Gyms', gymId, 'Attendance', dateStr, 'Records', memberId)));
+  }
+
+  const results = await Promise.all(checks);
+  return results.filter(snap => snap.exists()).length;
+};
