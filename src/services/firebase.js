@@ -5,12 +5,12 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "YOUR_AUTH_DOMAIN",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "YOUR_PROJECT_ID",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "YOUR_STORAGE_BUCKET",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_MESSAGING_SENDER_ID",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAUg0puqzHBvr7Cvs2QyClu95Vpo6OUO7E",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gym-5952f.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gym-5952f",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gym-5952f.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "859519078354",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:859519078354:web:f7e7f400e4fdf24811c20b"
 };
 
 // Safe local storage mock to prevent Firebase crashes in incognito/strict-privacy browsers
