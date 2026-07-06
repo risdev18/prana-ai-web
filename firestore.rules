@@ -4,11 +4,8 @@ service cloud.firestore {
 
     // ─── SUPER ADMIN UTILITIES ───
     function isSuperAdmin() {
-      return request.auth != null && (
-        request.auth.token.email == 'anshu@admin.com' ||
-        request.auth.token.email == 'rishabhsonawane18@gmail.com' ||
-        request.auth.token.email == 'sonawaneanshu18@gmail.com'
-      );
+      return request.auth != null &&
+        get(/databases/$(database)/documents/Gyms/$(request.auth.uid)).data.role == 'superadmin';
     }
 
     match /{document=**} {
@@ -34,7 +31,11 @@ service cloud.firestore {
     // Only the authenticated gym owner can write to their own gym document, OR Super Admin.
     match /Gyms/{gymId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == gymId;
+      allow create: if request.auth != null && request.auth.uid == gymId && 
+                    (!('role' in request.resource.data) || request.resource.data.role != 'superadmin');
+      allow update: if request.auth != null && request.auth.uid == gymId && 
+                    (!('role' in request.resource.data) || request.resource.data.role == resource.data.role);
+      allow delete: if request.auth != null && request.auth.uid == gymId;
       allow write: if isSuperAdmin();
 
       // ─── MEMBERS ───
@@ -50,9 +51,9 @@ service cloud.firestore {
                        get(/databases/$(database)/documents/Gyms/$(gymId)).data.activeMembersCount < 5 ||
                        !("activeMembersCount" in get(/databases/$(database)/documents/Gyms/$(gymId)).data));
         // Gym owners can update everything.
-        // Members (unauthenticated) can ONLY update their password and phone during onboarding.
+        // Members (unauthenticated) can ONLY update their password fields and phone during onboarding.
         allow update: if (request.auth != null && request.auth.uid == gymId) ||
-                         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['password', 'phone']));
+                         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['password', 'passwordHash', 'passwordSalt', 'phone', 'failedAttempts', 'lockedUntil', 'mustSetPassword']));
 
         // Assessments: members can create their own, owner can edit/delete
         match /Assessments/{assessmentId} {

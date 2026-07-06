@@ -40,7 +40,7 @@ const MemberList = () => {
     e.stopPropagation();
     if (window.confirm(`Reset password for ${member.memberName}? They will be prompted to create a new one on their next login.`)) {
       try {
-        await updateMember(currentUser.uid, { ...member, password: '' });
+        await updateMember(currentUser.uid, { ...member, password: null, passwordHash: null, passwordSalt: null, mustSetPassword: true, failedAttempts: 0, lockedUntil: null });
         alert('Password reset successfully!');
       } catch {
         alert('Error resetting password');

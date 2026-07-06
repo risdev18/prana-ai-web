@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Search, ArrowLeft, Building2, ChevronRight, AlertCircle, Lock, Zap, CheckCircle, Phone } from 'lucide-react';
 import { findGymByName, getMembersByGymId, updateMember } from '../services/firestoreService';
+import { hashPassword, generateSalt } from '../utils/crypto';
 
 const StepIndicator = ({ step, total }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '24px' }}>
@@ -45,6 +46,9 @@ const MemberPortal = () => {
   const [verifyPhoneInput, setVerifyPhoneInput] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
+  const [authLoading, setAuthLoading] = useState(false);
+
+  const needsPasswordSetup = !authMember?.passwordHash && !authMember?.password || authMember?.mustSetPassword;
   const currentStep = !selectedGym ? 1 : !authMember ? 2 : 3;
 
   const handleSearchGym = async (e) => {
@@ -91,7 +95,15 @@ const MemberPortal = () => {
     e.preventDefault();
     setPinError('');
 
-    if (!authMember.password) {
+    if (authMember.lockedUntil) {
+      const lockTime = new Date(authMember.lockedUntil).getTime();
+      if (Date.now() < lockTime) {
+        const minsLeft = Math.ceil((lockTime - Date.now()) / 60000);
+        return setPinError(`Too many failed attempts. Try again in ${minsLeft} minutes.`);
+      }
+    }
+
+    if (needsPasswordSetup) {
       const expectedPhone = (authMember.phone || '').replace(/\D/g, '');
       const inputPhone = verifyPhoneInput.replace(/\D/g, '');
       if (expectedPhone && inputPhone !== expectedPhone) {
@@ -105,24 +117,68 @@ const MemberPortal = () => {
     if (pinInput.length < 4) return setPinError('Password must be at least 4 characters');
     setAuthLoading(true);
     try {
-      if (!authMember.password) {
-        // IMPORTANT: Only send password + phone fields.
-        // Firestore security rule only allows unauthenticated updates
-        // if affectedKeys().hasOnly(['password', 'phone']).
-        // Spreading the full member object would fail the rule.
-        const patch = { password: pinInput };
+      if (needsPasswordSetup) {
+        const salt = generateSalt();
+        const hash = await hashPassword(pinInput, salt);
+        const patch = { passwordHash: hash, passwordSalt: salt, mustSetPassword: false };
+        // Clean up old plain text password if it was somehow there
+        if (authMember.password) patch.password = null;
         if (!authMember.phone && verifyPhoneInput) {
           patch.phone = verifyPhoneInput;
         }
+        // Also reset any failed attempts
+        patch.failedAttempts = 0;
+        patch.lockedUntil = null;
+        
         await updateMember(selectedGym.gymId, { ...patch, memberId: authMember.memberId });
-        // Build the full updated member for navigation state (local only)
         const updatedMember = { ...authMember, ...patch };
         navigate('/member-dashboard', { state: { member: updatedMember, gym: selectedGym } });
       } else {
-        if (authMember.password === pinInput) {
-          navigate('/member-dashboard', { state: { member: authMember, gym: selectedGym } });
+        // Authenticating an existing user
+        let isAuthenticated = false;
+        let requiresMigration = false;
+        
+        if (authMember.passwordHash && authMember.passwordSalt) {
+          const hashToTest = await hashPassword(pinInput, authMember.passwordSalt);
+          if (hashToTest === authMember.passwordHash) isAuthenticated = true;
+        } else if (authMember.password) {
+          // Backward compatibility check
+          if (authMember.password === pinInput) {
+            isAuthenticated = true;
+            requiresMigration = true;
+          }
+        }
+
+        if (isAuthenticated) {
+          // Reset failed attempts
+          const patch = { failedAttempts: 0, lockedUntil: null };
+          
+          if (requiresMigration) {
+            // Migrate to hash immediately
+            const salt = generateSalt();
+            patch.passwordHash = await hashPassword(pinInput, salt);
+            patch.passwordSalt = salt;
+            patch.password = null; // delete plain text
+          }
+          
+          await updateMember(selectedGym.gymId, { ...patch, memberId: authMember.memberId });
+          const updatedMember = { ...authMember, ...patch };
+          navigate('/member-dashboard', { state: { member: updatedMember, gym: selectedGym } });
         } else {
-          setPinError('Incorrect password. Please try again.');
+          // Auth failed, increment failed attempts
+          const failedAttempts = (authMember.failedAttempts || 0) + 1;
+          const patch = { failedAttempts };
+          if (failedAttempts >= 5) {
+            patch.lockedUntil = new Date(Date.now() + 5 * 60000).toISOString();
+          }
+          await updateMember(selectedGym.gymId, { ...patch, memberId: authMember.memberId });
+          setAuthMember({ ...authMember, ...patch }); // update local state
+          
+          if (patch.lockedUntil) {
+            setPinError('Too many failed attempts. Account locked for 5 minutes.');
+          } else {
+            setPinError('Incorrect password. Please try again.');
+          }
         }
       }
     } catch (err) {
@@ -187,7 +243,7 @@ const MemberPortal = () => {
           <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             {currentStep === 1 && <><Building2 size={13} /> Step 1 — Find Your Gym</>}
             {currentStep === 2 && <><Users size={13} /> Step 2 — Select Your Name</>}
-            {currentStep === 3 && <><Lock size={13} /> Step 3 — {authMember?.password ? 'Enter Password' : 'Create Password'}</>}
+            {currentStep === 3 && <><Lock size={13} /> Step 3 — {needsPasswordSetup ? 'Create Password' : 'Enter Password'}</>}
           </div>
 
           {/* ── STEP 1: Gym Search ── */}
@@ -326,7 +382,7 @@ const MemberPortal = () => {
                             <div style={{ fontWeight: 600, fontSize: '14px' }}>{m.memberName}</div>
                             <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>ID: {m.shortId}</div>
                           </div>
-                          {m.password ? <Lock size={15} color="var(--warning)" /> : <ChevronRight size={16} color="var(--text-3)" />}
+                          {(m.passwordHash || m.password) ? <Lock size={15} color="var(--warning)" /> : <ChevronRight size={16} color="var(--text-3)" />}
                         </div>
                       ))}
                     </div>
@@ -351,7 +407,7 @@ const MemberPortal = () => {
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '15px' }}>{authMember.memberName}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>
-                        {authMember.password ? '🔐 Enter your password' : '🔑 First time? Create a password'}
+                        {!needsPasswordSetup ? '🔐 Enter your password' : '🔑 First time? Create a password'}
                       </div>
                     </div>
                   </div>
@@ -363,7 +419,7 @@ const MemberPortal = () => {
                   )}
 
                   <form onSubmit={handleAuthSubmit}>
-                    {!authMember.password && (
+                    {needsPasswordSetup && (
                       <div className="form-group">
                         <label>Verify Registered Phone Number</label>
                         <div style={{ position: 'relative' }}>
@@ -379,15 +435,15 @@ const MemberPortal = () => {
                       </div>
                     )}
                     <div className="form-group">
-                      <label>{authMember.password ? 'Your Password' : 'Create a Password'}</label>
+                      <label>{!needsPasswordSetup ? 'Your Password' : 'Create a Password'}</label>
                       <div style={{ position: 'relative' }}>
                         <Lock size={17} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
                         <input
                           type="password" className="form-control"
-                          placeholder={authMember.password ? 'Enter your password' : 'Create a password (min 4 chars)'}
+                          placeholder={!needsPasswordSetup ? 'Enter your password' : 'Create a password (min 4 chars)'}
                           style={{ paddingLeft: '44px' }}
                           value={pinInput} onChange={e => setPinInput(e.target.value)} required
-                          autoFocus={!!authMember.password}
+                          autoFocus={!needsPasswordSetup}
                         />
                       </div>
                     </div>
@@ -404,7 +460,7 @@ const MemberPortal = () => {
                         {authLoading ? (
                           <><div style={{ width: '17px', height: '17px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} /> Verifying…</>
                         ) : (
-                          <><Zap size={16} /> {authMember.password ? 'Unlock Profile' : 'Save & Continue'}</>
+                          <><Zap size={16} /> {!needsPasswordSetup ? 'Unlock Profile' : 'Save & Continue'}</>
                         )}
                       </button>
                     </div>

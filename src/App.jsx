@@ -81,26 +81,16 @@ const ProtectedRoute = ({ children, allowedFeature }) => {
             try {
               const { doc, setDoc, getDoc } = await import('firebase/firestore');
               const { db } = await import('./services/firebase');
-              const isSuperAdmin = ['anshu@admin.com', 'rishabhsonawane18@gmail.com', 'sonawaneanshu18@gmail.com'].includes(currentUser.email?.toLowerCase());
               await setDoc(doc(db, 'Gyms', currentUser.uid), {
                 gymId: currentUser.uid,
-                gymName: isSuperAdmin ? 'Super Admin' : 'My Gym',
-                ownerName: isSuperAdmin ? 'Anshu' : currentUser.email,
+                gymName: 'My Gym',
+                ownerName: currentUser.email,
                 email: currentUser.email,
-                role: isSuperAdmin ? 'superadmin' : 'owner',
-                status: isSuperAdmin ? 'active' : 'pending',
+                role: 'owner',
+                status: 'pending',
                 createdAt: new Date().toISOString()
               });
-              if (isSuperAdmin) {
-                const settingsRef = doc(db, 'GlobalSettings', 'appSettings');
-                const snap = await getDoc(settingsRef);
-                if (!snap.exists()) {
-                  await setDoc(settingsRef, { websiteName: 'Vyronix', supportEmail: 'support@vyronix.com', supportPhone: 'Not Set', supportIdImage: '' });
-                }
-                window.location.href = '/superadmin';
-              } else {
-                window.location.href = '/pending-approval';
-              }
+              window.location.href = '/pending-approval';
             } catch (e) {
               alert('Setup failed: ' + e.message);
             }

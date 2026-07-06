@@ -7,29 +7,17 @@ export const registerGym = async ({ email, password, gymName, ownerName }) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    const isSuperAdmin = ['anshu@admin.com', 'rishabhsonawane18@gmail.com', 'sonawaneanshu18@gmail.com'].includes(email.toLowerCase());
-    
     const gymData = {
       gymId: user.uid,
       gymName,
       ownerName,
       email,
-      role: isSuperAdmin ? 'superadmin' : 'owner',
-      status: isSuperAdmin ? 'active' : 'pending',
+      role: 'owner',
+      status: 'pending',
       createdAt: new Date().toISOString()
     };
 
     await setDoc(doc(db, 'Gyms', user.uid), gymData);
-
-    // If super admin is being created, also seed GlobalSettings
-    if (isSuperAdmin) {
-      await setDoc(doc(db, 'GlobalSettings', 'appSettings'), {
-        websiteName: 'Vyronix',
-        supportEmail: 'support@vyronix.com',
-        supportPhone: 'Not Set',
-        supportIdImage: '',
-      });
-    }
     return gymData;
   } catch (error) {
     throw error;
@@ -46,34 +34,6 @@ export const loginGym = async ({ email, password }) => {
     
     if (docSnap.exists()) {
       return docSnap.data();
-    }
-
-    // If gym data is missing but this is the Super Admin, auto-create it
-    const isSuperAdmin = ['anshu@admin.com', 'rishabhsonawane18@gmail.com', 'sonawaneanshu18@gmail.com'].includes(email.toLowerCase());
-    if (isSuperAdmin) {
-      const adminData = {
-        gymId: user.uid,
-        gymName: 'Super Admin',
-        ownerName: 'Anshu',
-        email: user.email,
-        role: 'superadmin',
-        status: 'active',
-        createdAt: new Date().toISOString()
-      };
-      await setDoc(docRef, adminData);
-
-      // Also seed GlobalSettings if not already present
-      const settingsRef = doc(db, 'GlobalSettings', 'appSettings');
-      const settingsSnap = await getDoc(settingsRef);
-      if (!settingsSnap.exists()) {
-        await setDoc(settingsRef, {
-          websiteName: 'Vyronix',
-          supportEmail: 'support@vyronix.com',
-          supportPhone: 'Not Set',
-          supportIdImage: '',
-        });
-      }
-      return adminData;
     }
 
     throw new Error("Gym data not found. Please contact support.");

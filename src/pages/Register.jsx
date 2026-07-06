@@ -30,13 +30,10 @@ const Register = () => {
     if (password.length < 6) return setError('Password must be at least 6 characters');
     setLoading(true);
     try {
-      const isSuperAdmin = email.toLowerCase() === 'anshu@admin.com';
       await registerGym({ email, password, gymName, ownerName });
-      if (isSuperAdmin) {
-        navigate('/superadmin');
-      } else {
+      await loginGym({ email, password });
         navigate('/pending-approval');
-      }
+
     } catch (err) {
       const msg = err.code === 'auth/email-already-in-use'
         ? 'This email is already registered. Please login instead.'
