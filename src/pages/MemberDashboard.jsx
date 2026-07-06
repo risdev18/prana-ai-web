@@ -4,6 +4,7 @@ import { ArrowLeft, Activity, Target, Dumbbell, Apple, Moon, Droplets, Zap, Tren
 import QRCode from 'react-qr-code';
 import { updateMember, saveAssessment, addQuery, getMemberAttendanceThisMonth } from '../services/firestoreService';
 import { generateAssessment } from '../core/calculator';
+import toast from 'react-hot-toast';
 
 // ─── 3D BODY MODEL ───────────────────────────────────────────────────────────
 const BodyModel = ({ bmi, gender, height: h, weight: w, bmiColor }) => {
@@ -131,7 +132,7 @@ const MemberDashboard = () => {
       setTimeout(() => setQuerySuccess(false), 4000);
     } catch (err) {
       console.error(err);
-      alert('Failed to submit. Please try again.');
+      toast.error('Failed to submit. Please try again.');
     } finally {
       setQueryLoading(false);
     }
@@ -177,7 +178,7 @@ const MemberDashboard = () => {
     setSaveLoading(true);
     try {
       const w = parseFloat(editWeight);
-      if (isNaN(w) || w <= 0) return alert('Invalid weight');
+      if (isNaN(w) || w <= 0) { toast.error('Please enter a valid weight.'); setSaveLoading(false); return; }
 
       const newMemberData = { ...member, weight: w, goal: editGoal };
       const newAssessment = generateAssessment(newMemberData);
@@ -190,7 +191,7 @@ const MemberDashboard = () => {
       navigate('/member-dashboard', { state: { member: newMemberData, gym }, replace: true });
     } catch (err) {
       console.error(err);
-      alert('Error updating profile');
+      toast.error('Error updating profile. Please try again.');
     } finally {
       setSaveLoading(false);
     }
@@ -199,7 +200,7 @@ const MemberDashboard = () => {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return alert('Photo must be less than 2MB. Please choose a smaller image.');
+    if (file.size > 2 * 1024 * 1024) { toast.error('Photo must be less than 2MB. Please choose a smaller image.'); return; }
     const reader = new FileReader();
     reader.onload = async () => {
       try {
@@ -208,7 +209,7 @@ const MemberDashboard = () => {
         navigate('/member-dashboard', { state: { member: newMemberData, gym }, replace: true });
       } catch (err) {
         console.error('Error uploading photo', err);
-        alert('Failed to save photo');
+        toast.error('Failed to save photo. Please try again.');
       }
     };
     reader.readAsDataURL(file);
