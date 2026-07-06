@@ -59,6 +59,8 @@ const AddMember = () => {
   const [error, setError] = useState('');
   const [successMember, setSuccessMember] = useState(null);
   const [attendanceCheckedIn, setAttendanceCheckedIn] = useState(false);
+  const [isEndDateManuallyEdited, setIsEndDateManuallyEdited] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [members, setMembers] = useState([]);
   
   React.useEffect(() => {
