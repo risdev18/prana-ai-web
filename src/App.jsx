@@ -102,7 +102,7 @@ const ProtectedRoute = ({ children, allowedFeature }) => {
   }
 
   if (allowedFeature && !hasPermission(allowedFeature)) {
-    if (gymData?.role === 'superadmin') return <Navigate to="/superadmin" />;
+    if (hasPermission('superdashboard')) return <Navigate to="/superadmin" />;
     return <Navigate to="/dashboard" />;
   }
 

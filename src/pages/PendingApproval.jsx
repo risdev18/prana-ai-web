@@ -6,7 +6,7 @@ import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 const PendingApproval = () => {
-  const { logout, gymData, currentUser, refreshGymData } = useAuth();
+  const { logout, gymData, currentUser, refreshGymData, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
   const [checking, setChecking] = useState(false);
@@ -15,10 +15,10 @@ const PendingApproval = () => {
   useEffect(() => {
     if (gymData && gymData.status === 'active') {
       navigate('/dashboard');
-    } else if (gymData && gymData.role === 'superadmin') {
+    } else if (gymData && hasPermission('superdashboard')) {
       navigate('/superadmin');
     }
-  }, [gymData, navigate]);
+  }, [gymData, navigate, hasPermission]);
 
   useEffect(() => {
     const fetchSettings = async () => {
