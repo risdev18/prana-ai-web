@@ -73,11 +73,14 @@ export const deleteAllMembers = async (gymId) => {
 
 
 export const updateMember = async (gymId, member) => {
-  const memberRef = doc(db, 'Gyms', gymId, 'Members', member.memberId);
+  const { memberId, ...updateData } = member;
+  const refId = memberId || member.id;
+  if (!refId) throw new Error("Missing member ID for update");
+  const memberRef = doc(db, 'Gyms', gymId, 'Members', refId);
   // updateDoc is intentional — Firestore security rules allow unauthenticated updates
   // only when affectedKeys().hasOnly(['password', 'phone']).
   // Callers (especially MemberPortal) must only pass those fields for portal writes.
-  await updateDoc(memberRef, member);
+  await updateDoc(memberRef, updateData);
 };
 
 

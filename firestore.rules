@@ -53,7 +53,7 @@ service cloud.firestore {
         // Gym owners can update everything.
         // Members (unauthenticated) can ONLY update their password fields and phone during onboarding.
         allow update: if (request.auth != null && request.auth.uid == gymId) ||
-                         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['password', 'passwordHash', 'passwordSalt', 'phone', 'failedAttempts', 'lockedUntil', 'mustSetPassword']));
+                         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['password', 'passwordHash', 'passwordSalt', 'phone', 'failedAttempts', 'lockedUntil', 'mustSetPassword', 'weight', 'goal', 'photoUrl']));
 
         // Assessments: members can create their own, owner can edit/delete
         match /Assessments/{assessmentId} {
